@@ -1,0 +1,576 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Martian Map — Jüri Sunumu</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0}
+section{position:absolute;left:0;top:0;width:1920px;height:1080px;box-sizing:border-box;overflow:hidden;visibility:hidden}
+section.cur{visibility:visible}
+section > *{position:relative}
+section > .bleed, section > .scrim, section > .scrim-b, section > .strip, section > .pg, section > .src, section > svg{position:absolute}
+h1,h2,h3,p{margin:0} table{border-collapse:collapse}
+aside{display:none;position:absolute !important;left:0;right:0;bottom:0;background:rgba(14,17,20,.94);color:#E8E2D6;font:24px/1.4 Inter,Arial,sans-serif;padding:18px 110px;border-top:2px solid #BE7850}
+body.notes section.cur aside{display:block}
+/* Martian Map jury deck v2 — "the deck is the Marswalk": every slide is a waypoint on a traverse.
+   Palette from Mars: basalt night, paper white, regolith, science blue; state colours mint / amber / magenta. */
+section {
+  background: #0E1114; color: #E8E2D6; font-family: 'Inter', Arial, sans-serif;
+  padding: 90px 110px 150px; display: flex; flex-direction: column; gap: 24px;
+  counter-increment: page;
+}
+section.alt { background: #151A1F; }
+section.regolith { background: #BE7850; color: #0E1114; }
+h1 { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 220px; font-weight: 600; line-height: .92; letter-spacing: -2px; text-transform: uppercase; color: #F4F7F9; }
+h2 { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 68px; font-weight: 600; line-height: 1.04; color: #F4F7F9; }
+h3 { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 36px; font-weight: 600; line-height: 1.12; color: #F4F7F9; }
+p { font-size: 28px; line-height: 1.4; }
+
+/* waypoint tag: every slide is a stop on the traverse */
+.wp { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: #D9A877; }
+.lead { font-size: 34px; line-height: 1.34; color: #E8E2D6; }
+.soft { color: #A3ABB2; }
+.small { font-size: 24px; line-height: 1.4; }
+.mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+.blue { color: #4C9BFF; } .mint { color: #5FE3B0; } .amber { color: #FFC23D; } .magenta { color: #FF4FA8; } .white { color: #F4F7F9; } .ink { color: #0E1114; }
+.row { display: flex; gap: 32px; }
+.col { display: flex; flex-direction: column; gap: 16px; }
+
+/* giant telemetry numbers */
+.giant { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 300px; font-weight: 500; line-height: .9; letter-spacing: -8px; color: #F4F7F9; }
+.big { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 120px; font-weight: 500; line-height: 1; letter-spacing: -3px; color: #F4F7F9; }
+.mid { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 64px; font-weight: 500; line-height: 1; color: #F4F7F9; }
+
+/* readout: a label over a value with an accent bar on the left, no box */
+.readout { border-left: 6px solid #BE7850; padding: 4px 0 4px 24px; display: flex; flex-direction: column; gap: 6px; }
+.readout.mintbar { border-left-color: #5FE3B0; } .readout.amberbar { border-left-color: #FFC23D; } .readout.magentabar { border-left-color: #FF4FA8; } .readout.bluebar { border-left-color: #4C9BFF; } .readout.whitebar { border-left-color: #F4F7F9; }
+.readout .lab { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; color: #A3ABB2; }
+.readout .txt { font-size: 27px; line-height: 1.36; color: #E8E2D6; }
+
+/* checklist lines (Apollo cuff checklist) */
+.check { display: flex; gap: 22px; align-items: flex-start; border-top: 1px solid #2C363F; padding-top: 18px; }
+.check .box { width: 40px; height: 40px; border: 3px solid #A3ABB2; flex: none; }
+.check .box.done { background: #5FE3B0; border-color: #5FE3B0; }
+.check .txt { font-size: 29px; line-height: 1.34; flex: 1; }
+
+/* images */
+.bleed { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.scrim { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(90deg, rgba(14,17,20,.95) 0%, rgba(14,17,20,.78) 50%, rgba(14,17,20,.25) 100%); }
+.scrim-b { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(180deg, rgba(14,17,20,.15) 0%, rgba(14,17,20,.35) 55%, rgba(14,17,20,.96) 100%); }
+.shot { border: 1px solid #46525D; border-radius: 4px; object-fit: contain; background: #0E1114; box-shadow: 0 18px 60px rgba(0,0,0,.45); }
+.chart { object-fit: contain; }
+.photo { object-fit: cover; }
+.frame { object-fit: cover; border: 6px solid #E8E2D6; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+.caption { font-size: 24px; line-height: 1.35; color: #A3ABB2; }
+.plate { background: rgba(14,17,20,.88); border: 1px solid #46525D; padding: 6px 16px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; color: #F4F7F9; }
+
+/* state shapes */
+.verdict { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 44px; font-weight: 600; letter-spacing: 4px; padding: 8px 28px; border-radius: 4px; color: #0E1114; align-self: flex-start; }
+.verdict.go { background: #5FE3B0; } .verdict.caution { background: #FFC23D; } .verdict.nogo { background: #FF4FA8; }
+.stamp { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 40px; font-weight: 600; letter-spacing: 6px; text-transform: uppercase; border: 5px solid #FFC23D; color: #FFC23D; padding: 6px 24px; transform: rotate(-5deg); align-self: flex-start; }
+.hatch { background: repeating-linear-gradient(45deg, #FF4FA8 0px, #FF4FA8 4px, #2A1B24 4px, #2A1B24 14px); }
+.chip { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 1px; padding: 1px 14px; border-radius: 3px; color: #0E1114; align-self: flex-start; }
+.chip.obs { background: #5FE3B0; } .chip.der { background: #4C9BFF; } .chip.mod { background: #FFC23D; } .chip.ass { background: #FF4FA8; }
+
+/* data layer stack: skewed sheets */
+.sheet { width: 330px; height: 62px; transform: skewX(-28deg); border: 2px solid #E8E2D6; flex: none; }
+
+/* stacked composition bars built from flex segments */
+.bar { display: flex; height: 54px; gap: 3px; }
+.seg { display: flex; align-items: center; padding: 0 12px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; color: #0E1114; white-space: nowrap; }
+
+/* hour bars for the EVA window */
+.hours { display: flex; align-items: flex-end; gap: 6px; height: 310px; border-bottom: 2px solid #46525D; }
+.hr { flex: 1; background: #5FE3B0; }
+.hr.am { background: #FFC23D; } .hr.mg { background: #FF4FA8; }
+.hr.dd { background: repeating-linear-gradient(45deg, #FFC23D 0px, #FFC23D 6px, #7a5c12 6px, #7a5c12 12px); }
+
+/* traverse strip: where we are on the walk */
+.strip { position: absolute; left: 110px; bottom: 54px; width: 1200px; display: flex; gap: 10px; }
+.sg { flex: 1; border-top: 4px solid #2C363F; padding-top: 8px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: #858E97; }
+.sg.done { border-top-color: #BE7850; color: #D9A877; }
+.sg.on { border-top-color: #F4F7F9; color: #F4F7F9; }
+.regolith .sg { border-top-color: #8a5536; color: #3a2416; } .regolith .sg.done { border-top-color: #0E1114; color: #0E1114; } .regolith .sg.on { border-top-color: #0E1114; color: #0E1114; }
+.pg { position: absolute; right: 110px; bottom: 54px; width: 300px; text-align: right; padding-top: 12px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 2px; color: #858E97; }
+.pg::before { content: "WP "; } .pg::after { content: counter(page) " / 19"; }
+.regolith .pg { color: #2A1B14; }
+.src { position: absolute; left: 110px; bottom: 104px; width: 1700px; font-size: 24px; color: #858E97; }
+
+/* arrival motion */
+@keyframes rise { from { opacity: 0; transform: translateY(20px); } }
+@keyframes grow { from { transform: scaleY(0); } }
+.readout, .check, .shot, .frame, .chart { animation: rise .5s ease-out both; animation-delay: calc(var(--i, 0) * 110ms); }
+.hr { transform-origin: 50% 100%; animation: grow .6s ease-out both; animation-delay: calc(var(--i, 0) * 30ms); }
+
+</style></head><body><div id="stage"><section id="cover" data-transition="fade" style="justify-content:flex-end; gap:18px; padding-bottom:140px">
+<img class="bleed" src="assets/hirise_jezero_raw.jpg" alt="Jezero krateri delta önü, HiRISE yörünge görüntüsü">
+<div class="scrim"></div>
+<svg aria-label="Habitattan çıkıp hedefleri dolaşan ve geri dönen rota çizgisi" style="position:absolute; left:0; top:0; width:1920px; height:1080px" width="1920" height="1080" viewBox="0 0 1920 1080">
+<path d="M1010 930 C1120 820 1180 700 1290 640 S1520 560 1600 430 S1700 250 1560 190 S1300 200 1240 330 S1150 560 1080 700 S1020 860 1010 930" fill="none" stroke="#0E1114" stroke-width="12" stroke-linecap="round" stroke-dasharray="3200" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" from="3200" to="0" begin="0.3s" dur="2.6s"/></path>
+<path d="M1010 930 C1120 820 1180 700 1290 640 S1520 560 1600 430 S1700 250 1560 190 S1300 200 1240 330 S1150 560 1080 700 S1020 860 1010 930" fill="none" stroke="#F4F7F9" stroke-width="5" stroke-linecap="round" stroke-dasharray="3200" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" from="3200" to="0" begin="0.3s" dur="2.6s"/></path>
+<circle cx="1290" cy="640" r="15" fill="#0E1114" stroke="#4C9BFF" stroke-width="5"/>
+<circle cx="1600" cy="430" r="15" fill="#0E1114" stroke="#4C9BFF" stroke-width="5"/>
+<circle cx="1560" cy="190" r="15" fill="#0E1114" stroke="#4C9BFF" stroke-width="5"/>
+<circle cx="1240" cy="330" r="15" fill="#0E1114" stroke="#4C9BFF" stroke-width="5"/>
+<rect x="996" y="916" width="28" height="28" fill="#F4F7F9" stroke="#0E1114" stroke-width="5" transform="rotate(45 1010 930)"/>
+</svg>
+<p class="wp">EVA-01 · Jezero · 18.45°N 77.41°E · NASA Space Apps 2026</p>
+<h1>MARTIAN<br>MAP</h1>
+<p class="lead" style="width:900px">Mars astronotu için yüzey yürüyüşü rotası ve karar desteği. Harita girdi, <b>karar</b> çıktı.</p>
+<div class="row" style="gap:14px; margin-top:6px">
+<p class="verdict go">GO</p>
+<p class="verdict caution">CAUTION</p>
+<p class="verdict nogo">NO-GO</p>
+</div>
+<div class="strip"><p class="sg on">Çıkış</p><p class="sg">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Açılış. Bu sunumun kendisi bir Mars yürüyüşü gibi kurgulandı: her slayt bir yol noktası, altta beş bacaklı güzergâh şeridi var. Tek cümle: Mars Trek gezegeni gösterir; biz astronota önündeki iki kilometreyi gösteriyoruz ve bir karar veriyoruz. Arkadaki görüntü çalıştığımız gerçek sahne; üstüne çizilen çizgi programın ürettiği türden bir rota: habitattan çık, hedefleri dolaş, eve dön.</aside>
+</section>
+
+<section id="problem" class="alt" data-transition="fade">
+<p class="wp">WP 02 · Problem</p>
+<div class="row" style="gap:70px; align-items:flex-start">
+<div class="col" style="width:720px; gap:10px">
+<p class="giant">2 km</p>
+<h2>Gezegenin haritası var. Astronotun önündeki iki kilometrenin haritası yok.</h2>
+</div>
+<div class="col" style="flex:1; gap:36px; padding-top:30px">
+<p class="wp soft">Çıkış öncesi kontrol listesi · bugünkü araçlarla</p>
+<div class="check" style="--i:0"><div class="box"></div><p class="txt" style="font-size:34px"><b class="white">Ölçek.</b> Haritalar küresel; rakip projeler 20 ile 40 metrelik arazi modeli kullanıyor. Kayalar ve basamaklar görünmüyor.</p></div>
+<div class="check" style="--i:1"><div class="box"></div><p class="txt" style="font-size:34px"><b class="white">İnsan.</b> Planlama araçları tekerlek için. Oksijen, soğutma, yorgunluk ve geri yürüme sınırı hiçbirinde yok.</p></div>
+<div class="check" style="--i:2"><div class="box"></div><p class="txt" style="font-size:34px"><b class="white">Karar.</b> Katmanlı harita bir girdidir. Astronotun ihtiyacı çıktı: çık ya da çıkma, hangi yoldan, ne kadar marjla.</p></div>
+<p class="lead amber" style="margin-top:8px">Üç kutu da boş. Bu listeyle kimse dışarı çıkmaz.</p>
+</div>
+</div>
+<p class="src">Kaynak: Space Apps 2026 görev metni; rakip açık repoların incelemesi</p>
+<div class="strip"><p class="sg on">Çıkış</p><p class="sg">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Görev metni boşluğu kendisi söylüyor: mevcut haritalar küresel ve bölgesel ölçek için. Biz bunu bir çıkış öncesi kontrol listesi gibi düşündük: ölçek, insan, karar. Bugünkü araçlarla üç kutu da boş. Bir sonraki slaytta aynı listeyi dolduracağız.</aside>
+</section>
+
+<section id="cozum" data-transition="fade">
+<p class="wp">WP 03 · Çözüm</p>
+<div class="row" style="gap:56px; align-items:flex-start">
+<div class="col" style="width:560px; gap:20px">
+<h2>Aynı liste, bu kez dolu.</h2>
+<div class="check" style="--i:1"><div class="box done"></div><p class="txt"><b class="white">Ölçek.</b> 1 metrelik ızgara, 1.44 milyon hücre.</p></div>
+<div class="check" style="--i:2"><div class="box done"></div><p class="txt"><b class="white">İnsan.</b> Oksijen marjı rota boyunca her adımda: en dar nokta <span class="mono mint">+429 g</span>.</p></div>
+<div class="check" style="--i:3"><div class="box done"></div><p class="txt"><b class="white">Karar.</b> Her plan üç seviyeden birine düşer ve gerekçesini yazar.</p></div>
+<p class="verdict go" style="margin-top:6px">GO</p>
+</div>
+<div class="col" style="flex:1; gap:12px">
+<img class="shot" style="width:1084px; height:610px; --i:0" src="assets/shots/01_nominal.png" alt="Martian Map planlama ekranı: Jezero haritası üzerinde beş hedefli rota, sağda GO kararı ve karşılaştırma tablosu">
+<p class="caption">Çalışan uygulama, Jezero · Three Forks. Solda girdiler, ortada harita, sağda karar, altta rota profili.</p>
+</div>
+</div>
+<div class="strip"><p class="sg on">Çıkış</p><p class="sg">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Aynı kontrol listesi, bu kez dolu. Ölçek: bir metrelik ızgara. İnsan: oksijen marjı rota boyunca her adımda hesaplanıyor. Karar: GO, CAUTION ya da NO-GO ve gerekçesi. Sağdaki görüntü çalışan uygulama; programın çıktısı harita değil, sağ üstteki karar.</aside>
+</section>
+
+<section id="veri" class="alt" data-transition="fade">
+<p class="wp">WP 04 · Veri katmanları</p>
+<h2>Beş katman üst üste biner, altından tek bir karar çıkar</h2>
+<div class="col" style="gap:12px; margin-top:6px">
+<div class="row" style="gap:60px; align-items:center"><div class="sheet" style="background:#D9A877; margin-left:60px"></div><p style="width:350px; font-size:46px" class="mid">Optik</p><p style="flex:1" class="small">HiRISE 25 cm uydu görüntüsü. Kaya yoğunluğu, arazi sınıfı, kraterler.</p><p class="chip obs">Gözlenen</p></div>
+<div class="row" style="gap:60px; align-items:center"><div class="sheet" style="background:#BE7850; margin-left:60px"></div><p style="width:350px; font-size:46px" class="mid">Topoğrafya</p><p style="flex:1" class="small">USGS 1 metrelik arazi modeli. Eğim, gölge, görüş hattı.</p><p class="chip obs">Gözlenen</p></div>
+<div class="row" style="gap:60px; align-items:center"><div class="sheet" style="background:#4C9BFF; margin-left:60px"></div><p style="width:350px; font-size:46px" class="mid">Spektral</p><p style="flex:1" class="small">CRISM mineral haritası. Kil, karbonat, olivin: hidrasyon puanı.</p><p class="chip obs">Gözlenen</p></div>
+<div class="row" style="gap:60px; align-items:center"><div class="sheet" style="background:#F4F7F9; margin-left:60px"></div><p style="width:350px; font-size:46px" class="mid">Yer gerçeği</p><p style="flex:1" class="small">Perseverance izi, Navcam kareleri, örnek tüpü koordinatları.</p><p class="chip obs">Gözlenen</p></div>
+<div class="row" style="gap:60px; align-items:center"><div class="sheet" style="background:#5FE3B0; margin-left:60px"></div><p style="width:350px; font-size:46px" class="mid">Atmosfer</p><p style="flex:1" class="small">MEDA ölçümlerine dayalı sıcaklık eğrisi, toz şeytanı penceresi, RAD taban dozu.</p><p class="chip mod">Modellenmiş</p></div>
+</div>
+<div class="row" style="gap:24px; align-items:center; margin-top:10px">
+<div style="width:44px; height:60px; background:#F4F7F9; margin-left:190px; clip-path:polygon(30% 0,70% 0,70% 55%,100% 55%,50% 100%,0 55%,30% 55%)"></div>
+<p class="verdict go">KARAR</p>
+<p class="small soft" style="flex:1">Görev şartı en az üç veri türü. Her katman arayüzde kökenini taşır: gözlenen, türetilmiş, modellenmiş ya da varsayım.</p>
+</div>
+<p class="src">HiRISE: NASA/JPL-Caltech/UArizona · DTM: USGS Astrogeology · CRISM: Parente, Itoh, Saranathan (Zenodo 5575824)</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg on">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Veri bacağına girdik. Beş katman bir saydam yığın gibi üst üste biniyor: optik, topoğrafya, spektral, yer gerçeği, atmosfer. Dördü doğrudan ölçüm; beşincisi ölçümlere dayalı bir model ve öyle etiketli. Yığının altından tek şey çıkıyor: karar.</aside>
+</section>
+
+<section id="hirise" data-transition="fade">
+<p class="wp">WP 05 · HIRISE analizi</p>
+<div class="row" style="gap:50px; align-items:flex-start">
+<div class="col" style="width:430px; gap:22px">
+<h2>Tek sahne, üç bakış</h2>
+<p class="lead">Aynı görüntü soldan sağa işleniyor: önce fotoğraf, sonra arazi, sonra tehlike.</p>
+<div class="readout whitebar" style="--i:3"><p class="lab">Kaya mı, krater mi</p><p class="txt">Güneş batıdan. Parlak yüz ve doğusunda gölge: kaya. Karanlık duvar ve doğusunda parlak duvar: krater.</p></div>
+<div class="readout magentabar" style="--i:4"><p class="lab">Kum dalgası</p><p class="txt">Yönlü doku. Spirit'in saplandığı zemin; yasak.</p></div>
+</div>
+<div class="col" style="flex:1; gap:10px">
+<div class="row" style="gap:0">
+<img class="photo" style="width:406px; height:560px" src="assets/tri_raw.jpg" alt="Ham HiRISE görüntüsü, sahnenin sol üçte biri">
+<img class="photo" style="width:406px; height:560px; border-left:3px solid #F4F7F9" src="assets/tri_cls.jpg" alt="Arazi sınıfı bindirmesi, sahnenin orta üçte biri">
+<img class="photo" style="width:406px; height:560px; border-left:3px solid #F4F7F9" src="assets/tri_rock.jpg" alt="Kaya bolluğu ısı haritası, sahnenin sağ üçte biri">
+</div>
+<div class="row" style="gap:0">
+<p class="small" style="width:406px"><b class="white">1 · Fotoğraf</b><br>25 cm/piksel ham görüntü</p>
+<p class="small" style="width:406px; padding-left:14px"><b class="white">2 · Arazi</b><br>beyaz anakaya, mavi kayalık, yeşil kum</p>
+<p class="small" style="width:406px; padding-left:14px"><b class="white">3 · Tehlike</b><br>kaya bolluğu: siyan az, magenta çok</p>
+</div>
+</div>
+</div>
+<p class="src">Jezero sahnesi: sıkı toprak %42 · anakaya %24 · kayalık %23 · kum dalgası %11</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg on">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Uydu görüntüsünü altlık olarak değil, veri olarak kullanıyoruz. Sağdaki tek bir sahne; soldan sağa üç işlem aşaması yan yana: ham fotoğraf, arazi sınıfı, kaya bolluğu. Kaya ile krateri güneş yönünden ayırıyoruz: kayanın gölgesi güneşin tersine düşer, kraterin gölgeli duvarı güneş tarafındadır.</aside>
+</section>
+
+<section id="kaya" class="alt" data-transition="fade">
+<p class="wp">WP 06 · Ölçek cetveli</p>
+<h2>Uydu büyük kayayı görür. Astronotu küçük kaya düşürür.</h2>
+<div style="position:relative; width:1700px; height:400px">
+<svg aria-label="Ölçekli çizim: 10 santimetrelik kaya, 30 santimetrelik astronot botu, 30 santimetrelik kaya, 25 santimetrelik HiRISE pikseli ve 1 metrelik kaya" style="position:absolute; left:0; top:0; width:1700px; height:400px" width="1700" height="400" viewBox="0 0 1700 400">
+<line x1="0" y1="330" x2="1700" y2="330" stroke="#46525D" stroke-width="3"/>
+<circle cx="110" cy="300" r="30" fill="#FFC23D"/>
+<rect x="250" y="270" width="180" height="60" rx="22" fill="#F4F7F9"/>
+<rect x="250" y="190" width="70" height="90" rx="14" fill="#F4F7F9"/>
+<circle cx="610" cy="240" r="90" fill="#FFC23D"/>
+<rect x="800" y="180" width="150" height="150" fill="none" stroke="#4C9BFF" stroke-width="5" stroke-dasharray="14 8"/>
+<circle cx="1330" cy="30" r="300" fill="#BE7850"/>
+<line x1="0" y1="330" x2="1700" y2="330" stroke="#46525D" stroke-width="3"/>
+</svg>
+<p class="plate" style="position:absolute; left:40px; top:345px; width:150px; text-align:center">10 cm</p>
+<p class="plate" style="position:absolute; left:250px; top:345px; width:190px; text-align:center">bot 30 cm</p>
+<p class="plate" style="position:absolute; left:540px; top:345px; width:150px; text-align:center">30 cm</p>
+<p class="plate" style="position:absolute; left:770px; top:345px; width:220px; text-align:center">1 piksel 25 cm</p>
+<p class="plate" style="position:absolute; left:1250px; top:345px; width:170px; text-align:center">1 metre</p>
+<p class="small amber" style="position:absolute; left:40px; top:120px; width:700px"><b>Takılma bandı: 10 ile 30 cm.</b> Görüntüde yok.</p></div>
+<div class="row" style="gap:40px; margin-top:8px">
+<div class="readout bluebar" style="flex:1; --i:1"><p class="lab">Görünen</p><p class="txt">HiRISE yaklaşık 1 metreden büyük kayaları çözer.</p></div>
+<div class="readout amberbar" style="flex:1; --i:2"><p class="lab">Köprü</p><p class="txt">Golombek modeli büyük kaya sayısından küçüklerin kapladığı alanı verir.</p></div>
+<div class="readout magentabar" style="flex:1; --i:3"><p class="lab">Kalibrasyon</p><p class="txt">InSight %1.5 ile %5 <span class="mint">ölçülmüş</span>. Jezero %5 ile %25 <span class="magenta">varsayım</span>.</p></div>
+</div>
+<p class="src">Golombek ve Rapp 1997, JGR 102 · Golombek ve diğ. 2020, Nature Communications · çizim ölçekli: 1 metre = 600 piksel</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg on">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Bu çizim ölçekli. Soldan sağa: on santimetrelik bir kaya, astronotun otuz santimetrelik botu, otuz santimetrelik bir kaya, uydu görüntüsünün tek bir pikseli ve bir metrelik kaya. Uydu yalnızca en sağdakini görür. Astronotu düşüren soldakilerdir. Aradaki köprü Golombek'in kaya boyutu modeli; mutlak ölçeği de yayınlanmış yüzey sayımına bağlıyoruz. InSight için bu ölçülmüş, Jezero için varsayım ve öyle etiketli.</aside>
+</section>
+
+<section id="perseverance" data-transition="fade">
+<img class="bleed" src="assets/img_mastcamz_rim.jpg" alt="Perseverance Mastcam-Z panoraması: dağınık koyu kayalar, tan toprak, arkada düz tepe">
+<div style="position:absolute; left:0; top:0; width:1920px; height:1080px; background:rgba(14,17,20,.80)"></div>
+<p class="wp">WP 07 · Perseverance yer gerçeği</p>
+<h2>Varınca ne göreceğim? Rover tam oradan çekti.</h2>
+<div class="row" style="gap:44px; align-items:flex-start">
+<div class="col" style="width:520px; gap:10px">
+<img class="shot" style="width:520px; height:520px" src="assets/map_crop.jpg" alt="Rota haritası: numaralı hedefler ve kesikli Perseverance izi">
+<p class="caption">Haritada numaralı hedefler; kesikli çizgi Perseverance'ın gerçek izi (128 yol noktası).</p>
+</div>
+<div class="col" style="flex:1; gap:26px">
+<div class="row" style="gap:30px">
+<div class="col" style="gap:8px"><img class="frame" style="width:350px; height:232px; transform:rotate(-2deg); --i:1" src="../data/public/pov/rover/TF_663_1.jpg" alt="Navcam, sol 663, Three Forks deposu"><p class="small"><b class="blue mono">1</b> Three Forks deposu · sol 663</p></div>
+<div class="col" style="gap:8px"><img class="frame" style="width:350px; height:232px; transform:rotate(1.5deg); --i:2" src="../data/public/pov/rover/ROCKS_409_1.jpg" alt="Navcam, sol 409, kaya tarlası"><p class="small"><b class="blue mono">2</b> Kaya tarlası · sol 409</p></div>
+<div class="col" style="gap:8px"><img class="frame" style="width:350px; height:232px; transform:rotate(-1deg); --i:3" src="../data/public/pov/rover/RIPPLE_538_2.jpg" alt="Navcam, sol 538, dalga alanı kenarı"><p class="small"><b class="blue mono">3</b> Dalga alanı · sol 538</p></div>
+</div>
+<div class="row" style="gap:30px; align-items:flex-start">
+<div class="col" style="gap:8px"><img class="frame" style="width:350px; height:232px; transform:rotate(2deg); --i:4" src="../data/public/pov/rover/SCARP_707_0.jpg" alt="Navcam, sol 707, delta önü yarı"><p class="small"><b class="blue mono">4</b> Delta önü yarı · sol 707</p></div>
+<p class="lead" style="flex:1; padding-top:20px">Hedefe tıklayınca en yakın yol noktasından çekilmiş ham Navcam kareleri açılır. Kask görünümünde arka plan olur.</p>
+</div>
+</div>
+</div>
+<p class="src">Arka plan: ekibin seçtiği Mastcam-Z panoraması · görüntüler NASA/JPL-Caltech (Navcam), NASA/JPL-Caltech/ASU/MSSS (Mastcam-Z)</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg on">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Görev metni açıkça istiyor: varınca ne göreceğim. Perseverance bu sahnede 128 noktada durdu. Her rota hedefi için en yakın yol noktasını bulduk ve oradan çekilmiş ham Navcam karelerini bağladık. Soldaki haritada numaralar, sağdaki fotoğraflarda aynı numaralar. Arka plandaki soluk manzara ekibin seçtiği Mastcam-Z panoraması.</aside>
+</section>
+
+<section id="yergercegi" class="alt" data-transition="fade">
+<p class="wp">WP 08 · Kendi kendimizi sınadık</p>
+<h2>Yörünge tahmini yerden görünenle uyuşuyor mu?</h2>
+<div class="row" style="gap:56px; align-items:flex-start">
+<div class="col" style="gap:14px">
+<img class="chart" style="width:1010px; height:422px; --i:0" src="assets/fig_navcam_validation.png" alt="Dört yol noktasında yörünge kaya bolluğu ile Navcam doku indeksi karşılaştırması">
+<p class="caption" style="width:1010px">Mavi: uydudan kaya bolluğu. Kum rengi: Navcam karesinin yakın zemininde kaya yüzü ve gölge piksellerinin payı.</p>
+</div>
+<div class="col" style="flex:1; gap:20px">
+<p class="giant" style="font-size:220px">3/4</p>
+<p class="lead">Dört noktanın üçünde sıralama aynı. Kaya tarlasında uydu yerden yüksek okuyor.</p>
+<p class="stamp" style="margin-top:14px">Gösterge · kanıt değil</p>
+<p class="small soft" style="margin-top:10px">Pearson r = 0.64, n = 4. Yöntem 128 yol noktasına ölçeklenebilir.</p>
+</div>
+</div>
+<p class="src">Navcam: sol 538, 707, 663, 409 · her noktada 2 ile 4 kare · ölçüm betiği projede: sunum/make_charts.py</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg on">Veri</p><p class="sg">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Burada kendi kendimizi sınadık. Perseverance'ın karelerinde yakın zemindeki kaya dokusunu ölçtük ve aynı noktadaki uydu tahminimizle karşılaştırdık. Dört noktanın üçünde sıralama tutuyor; kaya tarlasında tutmuyor. Dört nokta istatistik değildir ve damgada bunu açıkça yazıyoruz. Ama yöntem hazır ve sahnede 128 yol noktası var.</aside>
+</section>
+
+<section id="puanlar" data-transition="fade" style="gap:36px">
+<p class="wp">WP 09 · Hücre puanları</p>
+<h2>Her metrekarenin üç notu var</h2>
+<div class="col" style="gap:8px">
+<div class="row" style="gap:20px; align-items:baseline"><h3 style="width:260px" class="mint">Güvenlik</h3><p class="small soft">Buradan geçmek ne kadar riskli? Dördüncü terim: bu hücreden eve dönmenin oksijen bedeli.</p></div>
+<div class="bar" style="height:70px">
+<p class="seg" style="flex:25; background:#4C9BFF">Kaya 25</p><p class="seg" style="flex:20; background:#D9A877">Eğim 20</p><p class="seg" style="flex:20; background:#BE7850">Zemin 20</p><p class="seg" style="flex:15; background:#F4F7F9">O₂ dönüş 15</p><p class="seg" style="flex:10; background:#FF4FA8">Rad. 10</p><p class="seg" style="flex:10; background:#FFC23D">Isı 10</p>
+</div>
+</div>
+<div class="col" style="gap:8px">
+<div class="row" style="gap:20px; align-items:baseline"><h3 style="width:260px" class="blue">Bilim</h3><p class="small soft">Burada durmaya değer mi? Yerinde kaya en değerli: Perseverance'ın 30 örneğinin 27'si kaya karotu.</p></div>
+<div class="bar" style="height:70px">
+<p class="seg" style="flex:30; background:#F4F7F9">Jeoloji 30</p><p class="seg" style="flex:25; background:#4C9BFF">Taze yüzey 25</p><p class="seg" style="flex:20; background:#D9A877">Çeşitlilik 20</p><p class="seg" style="flex:15; background:#BE7850">Yakınlık 15</p><p class="seg" style="flex:10; background:#5FE3B0">Su 10</p>
+</div>
+</div>
+<div class="col" style="gap:8px">
+<div class="row" style="gap:20px; align-items:baseline"><h3 style="width:260px">Güven</h3><p class="small soft">Bu notlara ne kadar inanmalı? Toplama karışmaz; 65'in altında sistem kendisi uyarır.</p></div>
+<div class="bar" style="height:70px">
+<p class="seg" style="flex:25; background:#A3ABB2">Görüntü 25</p><p class="seg" style="flex:25; background:#858E97">Veri 25</p><p class="seg" style="flex:20; background:#A3ABB2">Uyum 20</p><p class="seg" style="flex:20; background:#858E97">Kararlılık 20</p><p class="seg" style="flex:10; background:#A3ABB2">Konum</p>
+</div>
+</div>
+<div class="row" style="gap:28px; align-items:center; margin-top:6px">
+<div class="hatch" style="width:260px; height:84px; border:2px solid #FF4FA8; flex:none"></div>
+<p class="lead" style="flex:1"><b class="magenta">Veto.</b> Eğim 25 derecenin, kaya %40'ın üstünde ya da zemin kum dalgasıysa hücre duvardır. Bilim notu ne olursa olsun geçilmez.</p>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg on">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Motor bacağı. Her metrekare üç not alıyor. Güvenlikte en ağır terimler kaya, eğim ve zemin; dördüncü terim önemli: o hücreden habitata dönmek ne kadar oksijen ister. Bilimde yerinde kaya en değerli. Güven notu toplama karışmıyor, ayrı duruyor. En altta taralı blok: veto. Haritada aynı tarama geçilmez hücreleri gösteriyor. Öncelik sırası önce veto, sonra güvenlik yetmiş, bilim otuz; yapı Apollo ve BASALT kurallarından, sayı ayarlanabilir bir politika.</aside>
+</section>
+
+<section id="motor" class="alt" data-transition="fade">
+<p class="wp">WP 10 · Rota motoru</p>
+<h2>Tek çizgi değil: beş adımda bir plan</h2>
+<div class="row" style="gap:50px; align-items:flex-start">
+<div class="col" style="width:640px; gap:0; border-left:4px solid #F4F7F9; padding-left:34px">
+<div class="row" style="gap:20px; align-items:baseline; padding:12px 0"><p class="mid" style="width:60px">1</p><p style="flex:1"><b class="white">Sıra.</b> Oksijen ve süre bütçesi içinde en yüksek bilim. Sığmayan hedef gerekçesiyle atlanır.</p></div>
+<div class="row" style="gap:20px; align-items:baseline; padding:12px 0"><p class="mid" style="width:60px">2</p><p style="flex:1"><b class="white">Rota A.</b> Yasak hücrelere girmeden en düşük maliyetli yol.</p></div>
+<div class="row" style="gap:20px; align-items:baseline; padding:12px 0"><p class="mid" style="width:60px">3</p><p style="flex:1"><b class="white">B planı.</b> A'nın en zayıf noktası kapatılır, başka bir yol aranır.</p></div>
+<div class="row" style="gap:20px; align-items:baseline; padding:12px 0"><p class="mid" style="width:60px">4</p><p style="flex:1"><b class="white">Koridor.</b> Çizgi değil şerit; konum belirsizliği kadar genişler.</p></div>
+<div class="row" style="gap:20px; align-items:baseline; padding:12px 0"><p class="mid" style="width:60px">5</p><p style="flex:1"><b class="white">Sığınak.</b> Habitat ve rover; her noktadan kaç dakika.</p></div>
+</div>
+<div class="col" style="flex:1; gap:12px">
+<img class="shot" style="width:1010px; height:568px; --i:0" src="assets/shots/02_safety.png" alt="Güvenlik katmanı açık planlama ekranı: beyaz ana rota, gri kesikli B planı, magenta taralı yasak alanlar">
+<p class="caption">Beyaz: rota A. Gri kesikli: B planı. Magenta tarama: yasak. Kural tabanlı; içinde dil modeli yok.</p>
+</div>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg on">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Rota motoru beş iş yapıyor ve sıralı. Bir: hedefleri sıralıyor; bütçeye sığmayanı atlıyor ve nedenini yazıyor. İki: ana rotayı çiziyor. Üç: ana rotanın en zayıf halkasını kapatıp B planını buluyor. Dört: rota bir çizgi değil koridor; telsiz görüş hattı kaybolunca genişliyor. Beş: her noktadan en yakın gerçek sığınağa süreyi hesaplıyor. Hepsi deterministik: aynı girdi, aynı rota.</aside>
+</section>
+
+<section id="karsilastirma" data-transition="fade">
+<p class="wp">WP 11 · Düz çizgiye karşı</p>
+<div class="row" style="gap:0; align-items:stretch">
+<div class="col" style="flex:1; gap:8px; padding-right:60px">
+<p class="wp magenta">Düz çizgi</p>
+<p class="giant magenta">131</p>
+<h3>yasak hücreden geçer</h3>
+<p class="small soft">Kum dalgaları ve dik yamaçlar. En düşük güvenlik puanı 0.</p>
+</div>
+<div class="col" style="flex:1; gap:8px; padding-left:60px; border-left:2px solid #2C363F">
+<p class="wp mint">Martian Map rotası</p>
+<p class="giant mint">0</p>
+<h3>yasak hücre. Bedeli: yüzde 5 daha uzun yol.</h3>
+<p class="small soft">En düşük güvenlik puanı 57. B planında 62.</p>
+</div>
+</div>
+<div class="col" style="gap:14px; margin-top:50px">
+<div class="row" style="gap:20px; align-items:center"><p class="small mono" style="width:230px">Düz çizgi</p><div class="hatch" style="width:1065px; height:48px"></div><p class="small mono">2372 m · 290 g O₂</p></div>
+<div class="row" style="gap:20px; align-items:center"><p class="small mono" style="width:230px">Rota A</p><div style="width:1122px; height:48px; background:#F4F7F9"></div><p class="small mono">2498 m · 287 g</p></div>
+<div class="row" style="gap:20px; align-items:center"><p class="small mono" style="width:230px">B planı</p><div style="width:1214px; height:48px; background:#A3ABB2"></div><p class="small mono">2704 m · 298 g</p></div>
+</div>
+<p class="src">Jezero · Three Forks, beş hedef, nominal senaryo · üçü de aynı maliyet modeliyle değerlendirildi</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg on">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Neden rota algoritması gerekli sorusunun cevabı iki sayı. Aynı hedefleri düz çizgiyle birleştirirsek 131 yasak hücreden geçiyoruz. Bizim rota sıfır. Bedeli yüzde beş daha uzun yol ve oksijen neredeyse aynı. Alttaki üç çubuk mesafeleri gösteriyor; düz çizgi en kısa ama taralı, yani geçilemez.</aside>
+</section>
+
+<section id="oksijen" class="alt" data-transition="fade">
+<p class="wp">WP 12 · Walk-back kuralı</p>
+<h2>Her adımda aynı soru: buradan eve dönebilir miyim?</h2>
+<div class="col" style="gap:8px">
+<div class="bar" style="height:70px">
+<p class="seg" style="flex:287; background:#A3ABB2">harcanan 287 g</p>
+<p class="seg" style="flex:433; background:#5FE3B0">rota sonunda kalan 433 g</p>
+</div>
+<p class="caption">Oksijen tankı 720 g. Kural: kalan oksijen, o noktadan dönüş için gerekenin 1.2 katından az olamaz.</p>
+</div>
+<div class="row" style="gap:50px; align-items:flex-start">
+<img class="chart" style="width:1180px; height:381px; --i:0" src="assets/chart_o2_profile.png" alt="Rota boyunca kalan oksijen ve 1.2 kat dönüş oksijeni eşiği">
+<div class="col" style="flex:1; gap:22px">
+<div class="readout mintbar" style="--i:1"><p class="lab">En dar marj · 1727 m</p><p class="mid mint">+429 g</p><p class="txt">Nominal tüketimle yaklaşık 286 dakika.</p></div>
+<div class="readout magentabar" style="--i:2"><p class="lab">Kesişirse</p><p class="txt">Beyaz çizgi kesikli eşiğe değdiği nokta haritada <b class="magenta">dönüşü olmayan nokta</b> olur; karar NO-GO.</p></div>
+</div>
+</div>
+<p class="src">33 g O₂/km düz zeminde (Apollo walk-back varsayımı) · yokuş çarpanı 1 + 3.5·tanθ (Minetti 2002, 0.38 g ölçeği)</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg on">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Apollo'nun geri yürüme kuralını dinamik hale getirdik. Üstteki şerit tank: 720 gramın 287'si bu rotada harcanıyor. Grafikte beyaz çizgi kalan oksijen, kesikli magenta çizgi o noktadan dönmek için gerekenin 1.2 katı. İkisi kesişirse yürüyüş reddedilir ve kesişme noktası haritada işaretlenir. Bu rotada en dar marj 429 gram.</aside>
+</section>
+
+<section id="saat" data-transition="fade">
+<p class="wp">WP 13 · EVA saat penceresi</p>
+<h2>Ne zaman çıkmalı? 07:30, toz şeytanlarından önce.</h2>
+<div class="col" style="gap:0; margin-top:4px">
+<div class="row" style="gap:6px; height:58px">
+<div style="flex:3"></div>
+<p class="small mono white" style="flex:7; border-top:4px solid #F4F7F9; border-left:4px solid #F4F7F9; border-right:4px solid #F4F7F9; text-align:center; padding-top:6px">önerilen EVA · 07:30 → 10:36</p>
+<p class="small mono amber" style="flex:6; text-align:center; padding-top:10px">toz şeytanı tepesi</p>
+<div style="flex:9"></div>
+</div>
+<div class="hours">
+<div class="hr mg" style="height:84px; --i:0"></div><div class="hr mg" style="height:111px; --i:1"></div><div class="hr" style="height:213px; --i:2"></div><div class="hr" style="height:225px; --i:3"></div><div class="hr" style="height:237px; --i:4"></div><div class="hr" style="height:249px; --i:5"></div><div class="hr" style="height:261px; --i:6"></div><div class="hr" style="height:273px; --i:7"></div><div class="hr" style="height:285px; --i:8"></div><div class="hr" style="height:297px; --i:9"></div><div class="hr dd" style="height:180px; --i:10"></div><div class="hr dd" style="height:180px; --i:11"></div><div class="hr dd" style="height:180px; --i:12"></div><div class="hr dd" style="height:180px; --i:13"></div><div class="hr dd" style="height:180px; --i:14"></div><div class="hr dd" style="height:180px; --i:15"></div><div class="hr" style="height:300px; --i:16"></div><div class="hr" style="height:300px; --i:17"></div><div class="hr" style="height:300px; --i:18"></div><div class="hr" style="height:297px; --i:19"></div><div class="hr" style="height:288px; --i:20"></div><div class="hr" style="height:276px; --i:21"></div><div class="hr" style="height:264px; --i:22"></div><div class="hr am" style="height:153px; --i:23"></div><div class="hr mg" style="height:78px; --i:24"></div>
+</div>
+<div class="row" style="justify-content:space-between; padding-top:8px">
+<p class="small mono soft">06:00</p><p class="small mono soft">09:00</p><p class="small mono soft">12:00</p><p class="small mono soft">15:00</p><p class="small mono soft">18:00</p>
+</div>
+</div>
+<div class="row" style="gap:50px; margin-top:6px">
+<div class="readout magentabar" style="flex:1"><p class="lab">Sabah erken ve akşam</p><p class="txt">Soğuk ve alçak güneş.</p></div>
+<div class="readout amberbar" style="flex:1"><p class="lab">11 ile 14 arası</p><p class="txt">Toz şeytanı tepesi (MEDA).</p></div>
+<div class="readout whitebar" style="flex:1"><p class="lab">Aydınlık rezervi</p><p class="txt">Gün batımına en az 2 saat.</p></div>
+<div class="readout bluebar" style="flex:1"><p class="lab">Dünya gecikmesi</p><p class="txt">Bugün 20.6 dk. Plan araçta olmalı.</p></div>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg on">Motor</p><p class="sg">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Aynı rota günün her saatinde aynı güvenlikte değil. Her çubuk yarım saat; yüksekliği o saatin uygunluk puanı. Sabah erken soğuk ve güneş alçak. On bir ile on dört arası toz şeytanlarının tepe yaptığı saatler, taralı çubuklar. Sistem bu rota için 07:30 başlangıcını öneriyor: 3.1 saatlik yürüyüş toz şeytanı penceresinden önce bitiyor. Sıcaklık ve güneş geometrisi bir model; bunu geçerlilik slaytında söylüyoruz. Dünya ile gecikme bugün yirmi dakika: yer kontrol gerçek zamanlı yardım edemez.</aside>
+</section>
+
+<section id="olaylar" class="alt" data-transition="fade">
+<p class="wp amber">WP 14 · MASTER CAUTION</p>
+<h2>Yürüyüşün ortasında bir şey ters giderse</h2>
+<div class="row" style="gap:50px; align-items:flex-start">
+<div class="col" style="width:610px; gap:20px">
+<div class="readout amberbar" style="--i:0"><p class="lab">Giysi sızıntısı · tüketim ×3</p><p class="txt">Marj 286 dakikadan <b class="white">208</b>'e iner. Kalan iki hedef hâlâ güvenli.</p></div>
+<div class="readout amberbar" style="--i:1"><p class="lab">Eş yaralandı · hız ×0.5</p><p class="txt">Kalan süre 73 dakikadan <b class="white">107</b>'ye çıkar; plan bunu baştan hesaplar.</p></div>
+<div class="readout amberbar" style="--i:2"><p class="lab">Toz fırtınası · τ = 4</p><p class="txt">Hız düşer; saklanılacak yerler haritada kırmızıya döner.</p></div>
+<div class="readout magentabar" style="--i:3"><p class="lab magenta">Güneş fırtınası</p><p class="txt">Bilim iptal. En yakın gerçek sığınağa <b class="white">17 dakikalık</b> rota ve geri sayım.</p></div>
+</div>
+<div class="col" style="flex:1; gap:12px">
+<img class="shot" style="width:1040px; height:585px; --i:4" src="assets/shots/08_sep_shelter.png" alt="Güneş fırtınası senaryosu: astronot konumundan habitata sarı sığınak rotası, sığınaklar kırmızı">
+<p class="caption">Güneş fırtınası anı. Astronot rotanın %45'inde: 3 hedef tamam, harcanan oksijen ve süre devredildi, sığınaklar kırmızı.</p>
+</div>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg done">Motor</p><p class="sg on">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Olay bacağı. Planlama araçlarının çoğu yürüyüş başlayınca susar. Bizimki yürüyüşün ortasında, astronotun bulunduğu yerden yeniden planlıyor. Dört olayı denedik. En çarpıcısı güneş parçacık fırtınası: sistem bilimi iptal ediyor, en yakın basınçlı sığınağa rota çiziyor ve süreyi sayıyor. Ekran görüntüsünde saklanılacak yerler kırmızı. Bir not: Mars atmosferi bu fırtınaları Ay'a göre çok zayıflatır; yine de kural yürüyüşü bitirip sığınağa dönmektir.</aside>
+</section>
+
+<section id="hud" data-transition="fade" style="justify-content:flex-end; gap:14px">
+<img class="bleed" src="assets/shots/09_hud.png" alt="Kask vizörü görünümü: oksijen, bingo dakikası, sonraki hedef yönü, sığınağa süre, Navcam arka planı, SEP uyarısı">
+<div class="scrim-b"></div>
+<p class="wp">WP 15 · Vizörün içinden</p>
+<h2>Aynı plan, üç yerde: habitat ekranı, kask vizörü, bilek</h2>
+<div class="row" style="gap:50px">
+<div class="readout whitebar" style="flex:1"><p class="lab">Habitat ekranı</p><p class="txt">Hedefler, senaryolar, rota karşılaştırması.</p></div>
+<div class="readout mintbar" style="flex:1.3"><p class="lab">Kask vizörü · bu görüntü</p><p class="txt">Oksijen marjı dakika olarak, sonraki hedefin yönü, sığınağa süre. Arka plan gerçek Navcam karesi.</p></div>
+<div class="readout whitebar" style="flex:1"><p class="lab">Bilek listesi</p><p class="txt">Yazdırılabilir tek sayfa: bacaklar, kurallar, dönüşü olmayan nokta.</p></div>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg done">Motor</p><p class="sg on">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Şu an astronotun vizöründen bakıyorsunuz. Bu, uygulamanın kask görünümünün ekran görüntüsü, güneş fırtınası anında: üstte tek uyarı, sığınağa on yedi dakika. Arka plandaki manzara Perseverance'ın o noktadan çektiği gerçek görüntü. Aynı plan üç biçimde var: habitatta planlama ekranı, kaskta vizör, bilekte yazdırılabilir kontrol listesi.</aside>
+</section>
+
+<section id="uretec" data-transition="fade">
+<img class="bleed" src="assets/bg_insight.jpg" alt="InSight iniş yeri, HiRISE yörünge görüntüsü: düz ova ve küçük kraterler">
+<div class="scrim"></div>
+<p class="wp">WP 16 · Başka bir yer · ELYSIUM PLANITIA</p>
+<div class="row" style="gap:50px; align-items:flex-start">
+<div class="col" style="width:640px; gap:22px">
+<h2>Aynı motor, ekibin kendi fotoğrafı</h2>
+<p class="lead">InSight iniş yeri. 0.29 m/piksel, 325 × 287 metre. Tek komutla yeni sahne.</p>
+<p class="stamp">CAUTION</p>
+<p class="lead" style="margin-top:10px">Burada arazi modeli yok. Sistem bunu saklamıyor: veri güveni <b class="amber mono">56</b>, eşik 65. Rota çiziliyor ama karar "dikkat".</p>
+<p class="small soft">Sınıflandırma %97 sıkı toprak. Kaya bolluğu %1.5 ile %5: Golombek 2020 yüzey sayımıyla uyumlu.</p>
+</div>
+<div class="col" style="flex:1; gap:12px">
+<img class="shot" style="width:1010px; height:568px; --i:0" src="assets/shots/10_insight.png" alt="Elysium InSight sahnesi planlama ekranı: beş hedefli rota ve CAUTION kararı">
+<p class="caption">Aynı arayüz, aynı kurallar. Üs: InSight iniş aracı.</p>
+</div>
+</div>
+<p class="src">PIA26515, 23 Ekim 2024 · NASA/JPL-Caltech/UArizona</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg done">Motor</p><p class="sg on">Olay</p><p class="sg">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Görev metni farklı konumlar için harita üreten bir sistem öneriyor. Arkadaki görüntü ekibin gönderdiği fotoğraf: InSight iniş yeri. Aynı hat, aynı motor. Önemli olan sonuç: burada gerçek arazi modeli yok ve sistem bunu saklamıyor; veri güveni eşiğin altında olduğu için kendisi dikkat kararı veriyor. Dürüstlük tasarımın parçası.</aside>
+</section>
+
+<section id="dogrulama" class="alt" data-transition="fade">
+<p class="wp">WP 17 · Dürüstlük cetveli</p>
+<h2>Ne ölçtük, ne varsaydık: tek çizgide</h2>
+<div style="position:relative; width:1700px; height:560px">
+<div style="position:absolute; left:0; top:262px; width:1700px; height:30px; background:linear-gradient(90deg, #5FE3B0 0%, #4C9BFF 40%, #FFC23D 68%, #FF4FA8 100%)"></div>
+<p class="small mono mint" style="position:absolute; left:0; top:300px; width:300px">◀ ÖLÇTÜK</p>
+<p class="small mono magenta" style="position:absolute; left:1400px; top:300px; width:300px; text-align:right">VARSAYDIK ▶</p>
+
+<div style="position:absolute; left:60px; top:196px; width:3px; height:66px; background:#5FE3B0"></div>
+<p class="small" style="position:absolute; left:60px; top:60px; width:330px"><b class="white">Eğim, gölge, görüş hattı</b><br>USGS 1 m arazi modelinden doğrudan.</p>
+
+<div style="position:absolute; left:330px; top:292px; width:3px; height:66px; background:#5FE3B0"></div>
+<p class="small" style="position:absolute; left:330px; top:364px; width:330px"><b class="white">Mineral ve hidrasyon</b><br>CRISM, 36 m; kaba ama ölçülmüş.</p>
+
+<div style="position:absolute; left:640px; top:196px; width:3px; height:66px; background:#4C9BFF"></div>
+<p class="small" style="position:absolute; left:640px; top:26px; width:340px"><b class="white">Arazi sınıfı, kaya dağılımı</b><br>Görüntü dokusundan türetildi; göreli dağılım güvenilir.</p>
+
+<div style="position:absolute; left:850px; top:292px; width:3px; height:66px; background:#4C9BFF"></div>
+<p class="small" style="position:absolute; left:850px; top:364px; width:330px"><b class="white">Bekleme noktaları</b><br>Radyasyonu yalnız %3 ile %8 düşürür; gerçek sığınak habitat ve rover.</p>
+
+<div style="position:absolute; left:1120px; top:196px; width:3px; height:66px; background:#FFC23D"></div>
+<p class="small" style="position:absolute; left:1120px; top:60px; width:300px"><b class="white">Sıcaklık, güneş</b><br>MEDA tipi günlük eğri; model.</p>
+
+<div style="position:absolute; left:1330px; top:292px; width:3px; height:66px; background:#FF4FA8"></div>
+<p class="small" style="position:absolute; left:1250px; top:364px; width:300px"><b class="white">Jezero kaya ölçeği</b><br>%5 ile %25; yayınlanmış sayım yok.</p>
+
+<div style="position:absolute; left:1600px; top:196px; width:3px; height:66px; background:#FF4FA8"></div>
+<p class="small" style="position:absolute; left:1440px; top:60px; width:260px; text-align:right"><b class="white">Güvenlik 70, bilim 30</b><br>Politika; arayüzde kaydırıcı.</p>
+</div>
+<p class="src">Rota kararını veren kısımda dil modeli yok. Yapay zekâ araştırma sentezinde, kod yazımında ve raporlamada kullanıldı.</p>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg done">Motor</p><p class="sg done">Olay</p><p class="sg on">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Dönüş bacağı; önce dürüstlük. Bu cetvelin solunda ölçtüklerimiz, sağında varsaydıklarımız var. Eğim ve mineral ölçülmüş. Arazi sınıfı ve bekleme noktaları türetilmiş. Sıcaklık bir model. En sağda iki varsayım: Jezero'da kaya bolluğunun mutlak ölçeği ve yetmişe otuz ağırlığı. Zayıf noktalarımızı biz söylüyoruz. Yapay zekâ beyanı altta: rota kararını veren kısımda dil modeli yok.</aside>
+</section>
+
+<section id="teknik" data-transition="fade">
+<p class="wp">WP 18 · Makine dairesi</p>
+<div class="row" style="gap:70px; align-items:flex-start">
+<div class="col" style="width:760px; gap:12px">
+<p class="giant" style="font-size:230px">3.0 s</p>
+<h2>1.44 milyon hücre, tarayıcıda, sunucusuz</h2>
+<p class="lead soft">İlk sürüm 9.7 saniyeydi. Rota sonucu değişmeden üçte birine indi.</p>
+</div>
+<div class="col" style="flex:1; gap:16px; padding-top:20px">
+<p class="wp soft">Plan süresi · Jezero sahnesi</p>
+<div class="row" style="gap:18px; align-items:center"><div style="width:580px; height:44px; background:#FF4FA8; flex:none"></div><p class="small mono">9.7 s · ilk sürüm</p></div>
+<div class="row" style="gap:18px; align-items:center"><div style="width:305px; height:44px; background:#FFC23D; flex:none"></div><p class="small mono">5.1 s · önbellek, kovalı kuyruk</p></div>
+<div class="row" style="gap:18px; align-items:center"><div style="width:180px; height:44px; background:#5FE3B0; flex:none"></div><p class="small mono">3.0 s · kaba ızgarada sıralama</p></div>
+<div class="row" style="gap:18px; align-items:center"><div style="width:120px; height:44px; background:#5FE3B0; flex:none"></div><p class="small mono">2.0 s · senaryo değişince</p></div>
+<div class="readout whitebar" style="margin-top:18px"><p class="lab">Çevrimdışı</p><p class="txt">Mars'ta Dünya bağlantısı yok; her şey araçta çalışır.</p></div>
+<div class="readout whitebar"><p class="lab">Tekrarlanabilir</p><p class="txt">Aynı girdi, aynı rota. Karar günlüğü her adımı yazar.</p></div>
+<div class="readout whitebar"><p class="lab">Açık hat</p><p class="txt">Python sahne üretimi, TypeScript motor. Yeni sahne tek komut.</p></div>
+</div>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg done">Motor</p><p class="sg done">Olay</p><p class="sg on">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Teknik özet. Jezero sahnesi 1.44 milyon hücre. İlk sürümde plan on saniyeye yakındı; sonucu değiştirmeden üç saniyeye indirdik, senaryo değişikliklerinde iki saniye. Her şey tarayıcıda, sunucusuz çalışıyor; Mars'ta Dünya bağlantısına güvenemezsiniz. Aynı girdi her zaman aynı rotayı verir ve karar günlüğü nedenini yazar.</aside>
+</section>
+
+<section id="kapanis" class="regolith" style="justify-content:center; gap:30px">
+<p class="wp ink">WP 19 · Habitata dönüş</p>
+<h1 style="font-size:150px; color:#0E1114; line-height:.96">Harita girdi.<br>Karar çıktı.</h1>
+<p class="lead ink" style="width:1200px; font-size:40px">Astronot eve dönebileceğini, çıkmadan önce bilir.</p>
+<div class="row" style="gap:60px; margin-top:16px">
+<div class="col" style="flex:1; gap:6px; border-top:4px solid #0E1114; padding-top:14px">
+<h3 class="ink">Bugün çalışan</h3>
+<p class="ink">İki gerçek sahne, beş veri katmanı, rota ve B planı, oksijen marjı, saat penceresi, dört olay, üç görünüm.</p>
+</div>
+<div class="col" style="flex:1; gap:6px; border-top:4px solid #0E1114; padding-top:14px">
+<h3 class="ink">Sıradaki</h3>
+<p class="ink">InSight için gerçek arazi modeli, 128 yol noktasıyla tam doğrulama, gerçek MEDA sıcaklık verisi.</p>
+</div>
+<div class="col" style="flex:1; gap:6px; border-top:4px solid #0E1114; padding-top:14px">
+<h3 class="ink">Şimdi canlı</h3>
+<p class="ink mono" style="font-size:26px">1 nominal · 5 yürüyüşün ortası · 3 sızıntı · 2 güneş fırtınası · H vizör · 6 ikinci sahne</p>
+</div>
+</div>
+<div class="strip"><p class="sg done">Çıkış</p><p class="sg done">Veri</p><p class="sg done">Motor</p><p class="sg done">Olay</p><p class="sg on">Dönüş</p></div>
+<div class="pg"></div>
+<aside>Yürüyüş bitti, habitata döndük. Tek cümle: harita girdi, karar çıktı. Ardından canlı gösterime geçin: klavyeden bir, beş, üç, iki, H ve altı tuşlarıyla tüm akış iki dakikada gösterilir. Sorular için hazır konular: kaya yoğunluğu kalibrasyonu, yetmişe otuz ağırlığı, sığınak kavramı ve yapay zekâ kullanımı; hepsi dürüstlük cetvelinde.</aside>
+</section>
+
+</div>
+<script>
+const S=[...document.querySelectorAll('section')];let i=Math.max(0,S.findIndex(s=>'#'+s.id===location.hash));
+S.forEach(s=>{for(const c of s.children){const st=c.getAttribute('style')||'';if(/position:s*absolute/.test(st))c.style.position='absolute';}});
+function fit(){const k=Math.min(innerWidth/1920,innerHeight/1080);const st=document.getElementById('stage');st.style.transform='scale('+k+') translate(-50%,-50%)';}
+function show(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('cur',k===i));history.replaceState(null,'','#'+S[i].id);}
+addEventListener('resize',fit);addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' ','Enter'].includes(e.key))show(i+1);else if(['ArrowLeft','PageUp','Backspace'].includes(e.key))show(i-1);else if(e.key==='Home')show(0);else if(e.key==='End')show(S.length-1);else if(e.key.toLowerCase()==='n')document.body.classList.toggle('notes');else if(e.key.toLowerCase()==='f')document.documentElement.requestFullscreen?.();});
+addEventListener('click',e=>show(i+(e.clientX<innerWidth/3?-1:1)));fit();show(i);
+</script></body></html>

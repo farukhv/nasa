@@ -1,0 +1,12 @@
+node_modules/
+app/dist/
+data/raw/
+data/tiles_probe/
+data/derived/
+*.tif
+WhatsApp Image*
+__pycache__/
+sunum/preview/
+*.log
+.DS_Store
+Thumbs.db

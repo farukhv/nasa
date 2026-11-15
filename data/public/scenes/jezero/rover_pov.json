@@ -1,0 +1,181 @@
+{
+ "TF": {
+  "sol": 663,
+  "site": 32,
+  "drive": "482",
+  "waypoint": {
+   "sol": 663,
+   "site": 32,
+   "drive": 482,
+   "lon": 77.40807823,
+   "lat": 18.45276569,
+   "x": 604.6,
+   "y": 602.0,
+   "elev": -2545.18,
+   "dist_km": 13.91,
+   "pano": "https://mars.nasa.gov/mmgis-maps/M20/Layers/mosaics/N_LRGB_0663_RZS_0320482_CYL_L_AUTOGENJ03.jpg",
+   "azmin": "0.0",
+   "azmax": "360.0"
+  },
+  "images": [
+   {
+    "file": "/pov/rover/TF_663_0.jpg",
+    "az": -174.124,
+    "el": -29.8752,
+    "lmst": "Sol-00663M16:57:43.620",
+    "id": "NLF_0663_0725814430_645ECM_N0320482NCAM02663_01_195J"
+   },
+   {
+    "file": "/pov/rover/TF_663_1.jpg",
+    "az": -32.8625,
+    "el": -15.8692,
+    "lmst": "Sol-00663M17:03:22.297",
+    "id": "NLF_0663_0725814778_630ECM_N0320482NCAM12663_01_195J"
+   },
+   {
+    "file": "/pov/rover/TF_663_2.jpg",
+    "az": 39.2324,
+    "el": -14.9657,
+    "lmst": "Sol-00663M17:04:53.662",
+    "id": "NLF_0663_0725814872_506ECM_N0320482NCAM12663_01_195J"
+   },
+   {
+    "file": "/pov/rover/TF_663_3.jpg",
+    "az": 114.04,
+    "el": -29.4625,
+    "lmst": "Sol-00663M16:51:14.644",
+    "id": "NLF_0663_0725814030_979ECM_N0320482NCAM03663_14_095J"
+   }
+  ],
+  "credit": "NASA/JPL-Caltech (Perseverance Navcam, raw)"
+ },
+ "SCARP": {
+  "sol": 707,
+  "site": 33,
+  "drive": "612",
+  "waypoint": {
+   "sol": 707,
+   "site": 33,
+   "drive": 612,
+   "lon": 77.40845696,
+   "lat": 18.45864154,
+   "x": 627.1,
+   "y": 253.7,
+   "elev": -2522.816895,
+   "dist_km": 14.34,
+   "pano": "https://mars.nasa.gov/mmgis-maps/M20/Layers/mosaics/N_LRGB_0707_RZS_0330612_CYL_L_AUTOGENJ01.jpg",
+   "azmin": "0.0",
+   "azmax": "360.0"
+  },
+  "images": [
+   {
+    "file": "/pov/rover/SCARP_707_0.jpg",
+    "az": -161.053,
+    "el": -27.0244,
+    "lmst": "Sol-00707M15:24:37.361",
+    "id": "NLF_0707_0729714770_802ECM_N0330612NCAM02707_01_195J"
+   },
+   {
+    "file": "/pov/rover/SCARP_707_1.jpg",
+    "az": -26.1439,
+    "el": -27.2019,
+    "lmst": "Sol-00707M15:15:06.490",
+    "id": "NLF_0707_0729714184_241ECM_N0330612NCAM03707_10_195J"
+   },
+   {
+    "file": "/pov/rover/SCARP_707_2.jpg",
+    "az": 97.1388,
+    "el": -13.7299,
+    "lmst": "Sol-00707M15:32:05.292",
+    "id": "NLF_0707_0729715231_043ECM_N0330612NCAM13707_01_195J"
+   }
+  ],
+  "credit": "NASA/JPL-Caltech (Perseverance Navcam, raw)"
+ },
+ "ROCKS": {
+  "sol": 409,
+  "site": 22,
+  "drive": "0",
+  "waypoint": {
+   "sol": 409,
+   "site": 22,
+   "drive": 0,
+   "lon": 77.410419,
+   "lat": 18.45394613,
+   "x": 743.4,
+   "y": 532.1,
+   "elev": -2545.601318,
+   "dist_km": 9.75,
+   "pano": "https://mars.nasa.gov/mmgis-maps/M20/Layers/mosaics/N_LRGB_0409_RAS_0220000_CYL_S_AUTOGENJ03.jpg",
+   "azmin": "0.0",
+   "azmax": "360.0"
+  },
+  "images": [
+   {
+    "file": "/pov/rover/ROCKS_409_0.jpg",
+    "az": 195.938,
+    "el": -29.607,
+    "lmst": "Sol-00409M16:17:04.907",
+    "id": "NLF_0409_0703263190_682ECM_N0220000NCAM02409_01_185J"
+   },
+   {
+    "file": "/pov/rover/ROCKS_409_1.jpg",
+    "az": 267.243,
+    "el": -29.3417,
+    "lmst": "Sol-00409M15:20:19.235",
+    "id": "NLF_0409_0703259691_412ECM_N0220000NCAM03409_01_195J"
+   }
+  ],
+  "credit": "NASA/JPL-Caltech (Perseverance Navcam, raw)"
+ },
+ "RIPPLE": {
+  "sol": 538,
+  "site": 26,
+  "drive": "2548",
+  "waypoint": {
+   "sol": 538,
+   "site": 26,
+   "drive": 2548,
+   "lon": 77.40865142,
+   "lat": 18.45682814,
+   "x": 638.6,
+   "y": 361.2,
+   "elev": -2540.948975,
+   "dist_km": 12.04,
+   "pano": "https://mars.nasa.gov/mmgis-maps/M20/Layers/mosaics/N_LRGB_0538_RAS_0262548_CYL_S_AUTOGENJ01.jpg",
+   "azmin": "0.0",
+   "azmax": "360.0"
+  },
+  "images": [
+   {
+    "file": "/pov/rover/RIPPLE_538_0.jpg",
+    "az": 15.2579,
+    "el": -2.06227,
+    "lmst": "Sol-00538M15:50:07.461",
+    "id": "NLG_0538_0714713444_987ECM_N0262548NCAM00500_00_2I4J"
+   },
+   {
+    "file": "/pov/rover/RIPPLE_538_1.jpg",
+    "az": 87.2581,
+    "el": -5.10578,
+    "lmst": "Sol-00538M15:50:51.248",
+    "id": "NLG_0538_0714713489_978ECM_N0262548NCAM00500_00_2I4J"
+   },
+   {
+    "file": "/pov/rover/RIPPLE_538_2.jpg",
+    "az": 157.397,
+    "el": -2.7183,
+    "lmst": "Sol-00538M14:32:48.810",
+    "id": "NLF_0538_0714708678_852ECM_N0262548NCAM13538_01_195J"
+   },
+   {
+    "file": "/pov/rover/RIPPLE_538_3.jpg",
+    "az": 229.555,
+    "el": -0.00694328,
+    "lmst": "Sol-00538M14:35:11.934",
+    "id": "NLF_0538_0714708825_909ECM_N0262548NCAM13538_01_195J"
+   }
+  ],
+  "credit": "NASA/JPL-Caltech (Perseverance Navcam, raw)"
+ }
+}

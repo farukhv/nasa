@@ -1,0 +1,89 @@
+/* Martian Map jury deck v2 — "the deck is the Marswalk": every slide is a waypoint on a traverse.
+   Palette from Mars: basalt night, paper white, regolith, science blue; state colours mint / amber / magenta. */
+section {
+  background: #0E1114; color: #E8E2D6; font-family: 'Inter', Arial, sans-serif;
+  padding: 90px 110px 150px; display: flex; flex-direction: column; gap: 24px;
+  counter-increment: page;
+}
+section.alt { background: #151A1F; }
+section.regolith { background: #BE7850; color: #0E1114; }
+h1 { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 220px; font-weight: 600; line-height: .92; letter-spacing: -2px; text-transform: uppercase; color: #F4F7F9; }
+h2 { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 68px; font-weight: 600; line-height: 1.04; color: #F4F7F9; }
+h3 { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 36px; font-weight: 600; line-height: 1.12; color: #F4F7F9; }
+p { font-size: 28px; line-height: 1.4; }
+
+/* waypoint tag: every slide is a stop on the traverse */
+.wp { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: #D9A877; }
+.lead { font-size: 34px; line-height: 1.34; color: #E8E2D6; }
+.soft { color: #A3ABB2; }
+.small { font-size: 24px; line-height: 1.4; }
+.mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+.blue { color: #4C9BFF; } .mint { color: #5FE3B0; } .amber { color: #FFC23D; } .magenta { color: #FF4FA8; } .white { color: #F4F7F9; } .ink { color: #0E1114; }
+.row { display: flex; gap: 32px; }
+.col { display: flex; flex-direction: column; gap: 16px; }
+
+/* giant telemetry numbers */
+.giant { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 300px; font-weight: 500; line-height: .9; letter-spacing: -8px; color: #F4F7F9; }
+.big { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 120px; font-weight: 500; line-height: 1; letter-spacing: -3px; color: #F4F7F9; }
+.mid { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 64px; font-weight: 500; line-height: 1; color: #F4F7F9; }
+
+/* readout: a label over a value with an accent bar on the left, no box */
+.readout { border-left: 6px solid #BE7850; padding: 4px 0 4px 24px; display: flex; flex-direction: column; gap: 6px; }
+.readout.mintbar { border-left-color: #5FE3B0; } .readout.amberbar { border-left-color: #FFC23D; } .readout.magentabar { border-left-color: #FF4FA8; } .readout.bluebar { border-left-color: #4C9BFF; } .readout.whitebar { border-left-color: #F4F7F9; }
+.readout .lab { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 1px; text-transform: uppercase; color: #A3ABB2; }
+.readout .txt { font-size: 27px; line-height: 1.36; color: #E8E2D6; }
+
+/* checklist lines (Apollo cuff checklist) */
+.check { display: flex; gap: 22px; align-items: flex-start; border-top: 1px solid #2C363F; padding-top: 18px; }
+.check .box { width: 40px; height: 40px; border: 3px solid #A3ABB2; flex: none; }
+.check .box.done { background: #5FE3B0; border-color: #5FE3B0; }
+.check .txt { font-size: 29px; line-height: 1.34; flex: 1; }
+
+/* images */
+.bleed { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+.scrim { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(90deg, rgba(14,17,20,.95) 0%, rgba(14,17,20,.78) 50%, rgba(14,17,20,.25) 100%); }
+.scrim-b { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: linear-gradient(180deg, rgba(14,17,20,.15) 0%, rgba(14,17,20,.35) 55%, rgba(14,17,20,.96) 100%); }
+.shot { border: 1px solid #46525D; border-radius: 4px; object-fit: contain; background: #0E1114; box-shadow: 0 18px 60px rgba(0,0,0,.45); }
+.chart { object-fit: contain; }
+.photo { object-fit: cover; }
+.frame { object-fit: cover; border: 6px solid #E8E2D6; box-shadow: 0 14px 40px rgba(0,0,0,.5); }
+.caption { font-size: 24px; line-height: 1.35; color: #A3ABB2; }
+.plate { background: rgba(14,17,20,.88); border: 1px solid #46525D; padding: 6px 16px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; color: #F4F7F9; }
+
+/* state shapes */
+.verdict { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 44px; font-weight: 600; letter-spacing: 4px; padding: 8px 28px; border-radius: 4px; color: #0E1114; align-self: flex-start; }
+.verdict.go { background: #5FE3B0; } .verdict.caution { background: #FFC23D; } .verdict.nogo { background: #FF4FA8; }
+.stamp { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 40px; font-weight: 600; letter-spacing: 6px; text-transform: uppercase; border: 5px solid #FFC23D; color: #FFC23D; padding: 6px 24px; transform: rotate(-5deg); align-self: flex-start; }
+.hatch { background: repeating-linear-gradient(45deg, #FF4FA8 0px, #FF4FA8 4px, #2A1B24 4px, #2A1B24 14px); }
+.chip { font-family: 'Barlow Semi Condensed', Arial, sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 1px; padding: 1px 14px; border-radius: 3px; color: #0E1114; align-self: flex-start; }
+.chip.obs { background: #5FE3B0; } .chip.der { background: #4C9BFF; } .chip.mod { background: #FFC23D; } .chip.ass { background: #FF4FA8; }
+
+/* data layer stack: skewed sheets */
+.sheet { width: 330px; height: 62px; transform: skewX(-28deg); border: 2px solid #E8E2D6; flex: none; }
+
+/* stacked composition bars built from flex segments */
+.bar { display: flex; height: 54px; gap: 3px; }
+.seg { display: flex; align-items: center; padding: 0 12px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; color: #0E1114; white-space: nowrap; }
+
+/* hour bars for the EVA window */
+.hours { display: flex; align-items: flex-end; gap: 6px; height: 310px; border-bottom: 2px solid #46525D; }
+.hr { flex: 1; background: #5FE3B0; }
+.hr.am { background: #FFC23D; } .hr.mg { background: #FF4FA8; }
+.hr.dd { background: repeating-linear-gradient(45deg, #FFC23D 0px, #FFC23D 6px, #7a5c12 6px, #7a5c12 12px); }
+
+/* traverse strip: where we are on the walk */
+.strip { position: absolute; left: 110px; bottom: 54px; width: 1200px; display: flex; gap: 10px; }
+.sg { flex: 1; border-top: 4px solid #2C363F; padding-top: 8px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; color: #858E97; }
+.sg.done { border-top-color: #BE7850; color: #D9A877; }
+.sg.on { border-top-color: #F4F7F9; color: #F4F7F9; }
+.regolith .sg { border-top-color: #8a5536; color: #3a2416; } .regolith .sg.done { border-top-color: #0E1114; color: #0E1114; } .regolith .sg.on { border-top-color: #0E1114; color: #0E1114; }
+.pg { position: absolute; right: 110px; bottom: 54px; width: 300px; text-align: right; padding-top: 12px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; letter-spacing: 2px; color: #858E97; }
+.pg::before { content: "WP "; } .pg::after { content: counter(page) " / 19"; }
+.regolith .pg { color: #2A1B14; }
+.src { position: absolute; left: 110px; bottom: 104px; width: 1700px; font-size: 24px; color: #858E97; }
+
+/* arrival motion */
+@keyframes rise { from { opacity: 0; transform: translateY(20px); } }
+@keyframes grow { from { transform: scaleY(0); } }
+.readout, .check, .shot, .frame, .chart { animation: rise .5s ease-out both; animation-delay: calc(var(--i, 0) * 110ms); }
+.hr { transform-origin: 50% 100%; animation: grow .6s ease-out both; animation-delay: calc(var(--i, 0) * 30ms); }
