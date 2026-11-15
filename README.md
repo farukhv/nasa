@@ -20,8 +20,8 @@ python pipeline/build_scene.py insight   # ekibin PIA26515.tif görüntüsünden
 
 ## Jüri sunumu
 - Tarayıcıda açılan bağımsız kopya: `sunum/index.html` (ok tuşları ya da tıklama ile ilerler, **N** konuşmacı notları, **F** tam ekran).
-- Kaynaklar: `sunum/deck/project/` (slaytlar ve stil), `sunum/assets/` (ekran görüntüleri, grafikler, analiz görselleri).
-- Yeniden üretim: `python sunum/make_charts.py` (grafikler), `node sunum/shots.mjs` (uygulama ekran görüntüleri; önce `npm run dev`), `node sunum/build_standalone.mjs` (bağımsız kopya).
+- Kaynaklar: `sunum/deck/project/` (22 levha ve stil), `sunum/atlas/` (kâğıt zeminler, rota haritası, katman yığını, grafikler), `sunum/assets/` (ekran görüntüleri, analiz görselleri), `sunum/fonts/` (Fraunces, Archivo, JetBrains Mono; SIL OFL).
+- Yeniden üretim: `python sunum/make_atlas.py` (atlas görselleri ve grafikler), `node sunum/shots.mjs` (uygulama ekran görüntüleri; önce `npm run dev`), `node sunum/preview.mjs` (taşma denetimi), `node sunum/build_standalone.mjs` (bağımsız kopya).
 - Konuşma akışı, süre planı ve zor sorular: `docs/JURI-SUNUM-REHBERI.md`.
 
 ## Klasörler

@@ -98,11 +98,11 @@ export default function RightPanel(p: Props) {
         <div className="sec">
           <h3>EVA saat penceresi <Prov p="Modelled" /></h3>
           <svg width="100%" height="54" viewBox="0 0 288 54" preserveAspectRatio="none">
-            {win.hours.map((h, i) => { const x = (h.ltst - 6) / 12 * 288, w = 288 / 24; const col = h.score >= 70 ? '#5FE3B0' : h.score >= 45 ? '#FFC23D' : '#FF4FA8'; return <g key={i}><rect x={x} y={8} width={w + 0.5} height={18} fill={col} opacity={0.8} />{h.dustDevil && <rect x={x} y={8} width={w + 0.5} height={18} fill="url(#dd)" />}</g>; })}
-            <defs><pattern id="dd" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 4 L4 0" stroke="#0E1114" strokeWidth="1.2" /></pattern></defs>
-            {win.recommendedStart !== null && <g><rect x={(win.recommendedStart - 6) / 12 * 288} y={4} width={(active ? active.totals.tMin / 60 : 1) / 12 * 288} height={26} fill="none" stroke="#F4F7F9" strokeWidth={1.5} /></g>}
-            <rect x={(env.ltst - 6) / 12 * 288 - 1} y={2} width={2} height={30} fill="#4FD8FF" />
-            {[6, 9, 12, 15, 18].map(h => <text key={h} x={(h - 6) / 12 * 288} y={48} fontSize="10" fill="#A3ABB2" fontFamily="IBM Plex Mono" textAnchor={h === 6 ? 'start' : h === 18 ? 'end' : 'middle'}>{h}:00</text>)}
+            {win.hours.map((h, i) => { const x = (h.ltst - 6) / 12 * 288, w = 288 / 24; const col = h.score >= 70 ? '#1F8A68' : h.score >= 45 ? '#C2820F' : '#C92B73'; return <g key={i}><rect x={x} y={8} width={w + 0.5} height={18} fill={col} opacity={0.8} />{h.dustDevil && <rect x={x} y={8} width={w + 0.5} height={18} fill="url(#dd)" />}</g>; })}
+            <defs><pattern id="dd" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 4 L4 0" stroke="#FBF8F1" strokeWidth="1.2" /></pattern></defs>
+            {win.recommendedStart !== null && <g><rect x={(win.recommendedStart - 6) / 12 * 288} y={4} width={(active ? active.totals.tMin / 60 : 1) / 12 * 288} height={26} fill="none" stroke="#26201C" strokeWidth={1.5} /></g>}
+            <rect x={(env.ltst - 6) / 12 * 288 - 1} y={2} width={2} height={30} fill="#2166C9" />
+            {[6, 9, 12, 15, 18].map(h => <text key={h} x={(h - 6) / 12 * 288} y={48} fontSize="10" fill="#6E5A4B" fontFamily="JetBrains Mono" textAnchor={h === 6 ? 'start' : h === 18 ? 'end' : 'middle'}>{h}:00</text>)}
           </svg>
           <div className="why">Önerilen başlangıç <b className="ok">{win.recommendedStart !== null ? `${Math.floor(win.recommendedStart)}:${String(Math.round((win.recommendedStart % 1) * 60)).padStart(2, '0')}` : '—'}</b> LTST (beyaz çerçeve = EVA süresi; gün batımından en az 2 saat önce biter). Taralı 11:00–14:00: toz şeytanı tepe penceresi (Jezero MEDA, Newman 2022). Kırmızı: düşük güneş / soğuk / gölge cezası. Siyan çizgi: seçili saat.</div>
         </div>

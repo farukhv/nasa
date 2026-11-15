@@ -5,6 +5,7 @@ const DECK = here + 'deck/project';
 const src = fs.readFileSync(here + 'preview.mjs', 'utf8');
 const map = {};
 for (const m of src.matchAll(/'([0-9a-f]{32})': (A|R) \+ '([^']+)'/g)) map[m[1]] = (m[2] === 'A' ? 'assets' : '../data/public/pov/rover') + m[3];
+for (const m of src.matchAll(/"([0-9a-f]{32})": here [+] "([^"]+)"/g)) map[m[1]] = m[2];
 const deck = JSON.parse(fs.readFileSync(DECK + '/deck.json', 'utf8'));
 const css = fs.readFileSync(DECK + '/deck.css', 'utf8');
 let body = '', missing = new Set();
@@ -16,9 +17,10 @@ for (const id of deck.order) {
 }
 const html = `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${deck.title}</title>
-<link rel="stylesheet" href="${deck.faces.inter.href}">
+<link rel="stylesheet" href="${deck.faces.fraunces.href}">
 <style>
-html,body{margin:0;height:100%;background:#000;overflow:hidden}
+@font-face{font-family:Fraunces;src:url(fonts/Fraunces.ttf);font-weight:300 700;font-style:normal}@font-face{font-family:Fraunces;src:url(fonts/Fraunces-Italic.ttf);font-weight:300 700;font-style:italic}@font-face{font-family:Archivo;src:url(fonts/Archivo.ttf);font-weight:400 600}@font-face{font-family:"Archivo Narrow";src:url(fonts/ArchivoNarrow.ttf);font-weight:500 700}@font-face{font-family:"JetBrains Mono";src:url(fonts/JetBrainsMono.ttf);font-weight:400 700}
+html,body{margin:0;height:100%;background:#1c1612;overflow:hidden}
 #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0}
 section{position:absolute;left:0;top:0;width:1920px;height:1080px;box-sizing:border-box;overflow:hidden;visibility:hidden}
 section.cur{visibility:visible}

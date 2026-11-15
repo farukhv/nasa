@@ -1,21 +1,21 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap');
+@import url(https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Archivo:wght@400;500;600&family=Archivo+Narrow:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap);
 
 :root {
-  --bg-0: #0E1114; --bg-1: #151A1F; --bg-2: #1D242B; --bg-3: #242D35;
-  --line: #2C363F; --line-strong: #46525D; --scrim: rgba(14, 17, 20, .80);
-  --text-1: #E8E2D6; --text-2: #A3ABB2; --text-3: #858E97;
+  --bg-0: #D9CBB3; --bg-1: #F1E7D6; --bg-2: #FAF3E6; --bg-3: #E4D6BE;
+  --line: #DACCB4; --line-strong: #B3A084; --scrim: rgba(250, 243, 230, .94);
+  --text-1: #2B211B; --text-2: #6A5444; --text-3: #8F7B66;
   --mars-regolith: #BE7850; --mars-dust: #D9A877; --mars-umber: #6B4430; --mars-shadow: #2A1B14;
   --mars-sky: #C9A27E; --mars-halo: #6FA3D8; --mars-basalt: #4A5560;
-  --safe: #5FE3B0; --caution: #FFC23D; --nogo: #FF4FA8; --science: #4FD8FF; --comms: #F4F7F9; --abort: #FF3B30;
-  --ink-on-accent: #0E1114; --map-casing: #0E1114;
+  --safe: #1F8A68; --caution: #C2820F; --nogo: #C92B73; --science: #2166C9; --comms: #26201C; --abort: #D93025;
+  --ink-on-accent: #FBF8F1; --map-casing: #0E1114;
   --heat-0: #00204D; --heat-1: #31446B; --heat-2: #666970; --heat-3: #958F78; --heat-4: #CBBA69; --heat-5: #FFEA46;
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
   --r-1: 2px; --r-2: 4px;
-  --fs-micro: 11px; --fs-body: 13px; --fs-num: 15px; --fs-kpi: 24px; --fs-hero: 32px;
-  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
-  --font-label: "Barlow Semi Condensed", "IBM Plex Sans", sans-serif;
-  color-scheme: dark;
+  --fs-micro: 12px; --fs-body: 13.5px; --fs-num: 15px; --fs-kpi: 24px; --fs-hero: 32px;
+  --font-sans: Archivo, system-ui, sans-serif;
+  --font-mono: JetBrains Mono, ui-monospace, Consolas, monospace;
+  --font-label: Archivo Narrow, Archivo, sans-serif; --font-display: Fraunces, Georgia, serif;
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
@@ -161,7 +161,46 @@ details summary { cursor: pointer; color: var(--text-2); font-size: 12px; paddin
   body { overflow: visible; background: #fff; color: #000; }
   .app > *:not(.printonly) { display: none !important; }
   .app { display: block; height: auto; }
-  .printonly { display: block; font-family: "IBM Plex Mono", monospace; font-size: 11pt; padding: 12mm; color: #000; }
+  .printonly { display: block; font-family: "JetBrains Mono", monospace; font-size: 11pt; padding: 12mm; color: #000; }
   .printonly h1 { font-size: 16pt; letter-spacing: .08em; } .printonly h2 { font-size: 12pt; margin-top: 10pt; }
   .printonly table { width: 100%; border-collapse: collapse; } .printonly td, .printonly th { border-bottom: 1px solid #000; padding: 3pt 4pt; text-align: left; }
 }
+
+/* ---- light atlas theme: paper panels, ink rules, serif wordmark. The HUD keeps its own dark visor palette. ---- */
+.topbar { border-bottom: 1.5px solid var(--text-1); }
+.strip { border-top: 1.5px solid var(--text-1); }
+.wordmark b { font-family: var(--font-display); font-weight: 500; letter-spacing: -.01em; font-size: 21px; }
+.sec h3, .label { letter-spacing: .1em; }
+.decision .verdict { box-shadow: 0 6px 18px rgba(38, 32, 28, .14); }
+.decision .margins div { border: 1px solid var(--line); }
+.decision .margins .n, .big { font-weight: 500; }
+.btn { background: var(--bg-1); }
+.overlaymsg { background: rgba(251, 248, 241, .74); color: var(--text-1); }
+.poi .n, .poi.sample .n { border-color: var(--science); color: var(--science); background: var(--bg-1); }
+.layers .seg, .layers select, .layers .tg button, .legend, .mapfoot, .tip, .demohint, .banner { box-shadow: 0 2px 10px rgba(38, 32, 28, .18); }
+.layers .tg button.on, .seg button.on { background: var(--text-1); color: var(--bg-1); border-color: var(--text-1); }
+.banner { background: var(--bg-1); }
+.hud { --comms: #F4F7F9; --scrim: rgba(14, 17, 20, .80); --safe: #5FE3B0; --caution: #FFC23D; --nogo: #FF4FA8; --science: #4FD8FF; --line: #2C363F; --line-strong: #46525D; --text-1: #E8E2D6; --text-2: #A3ABB2; --bg-1: #151A1F; --bg-2: #1D242B; --bg-3: #242D35; --ink-on-accent: #0E1114; color-scheme: dark; }
+
+/* warmth and colour: umber masthead, rust actions, sand panels with cream cards (never plain white) */
+.topbar { background: #2E2420; color: #F6EDDD; border-bottom: 3px solid #C4572A; --text-1: #F6EDDD; --text-2: #D2BC9C; --text-3: #B49C7E; --line: #4A3B33; --line-strong: #6E5B4D; --bg-1: #2E2420; --bg-2: #3B2F29; --bg-3: #4A3B33; }
+.topbar .seg button.on { background: #F6EDDD; color: #2E2420; }
+.topbar .btn:hover { background: #4A3B33; }
+.wordmark b { color: #F6EDDD; font-size: 22px; }
+.wordmark span { color: #E8946A; font-family: var(--font-display); font-style: italic; font-size: 14px; }
+.rail, .side { background: linear-gradient(180deg, #F3EADA 0%, #EDE2CE 100%); }
+.strip { background: #F1E7D6; border-top: 3px solid #2E2420; }
+.sec h3 { color: #A8481F; }
+.sec h3::before { content: ""; width: 8px; height: 8px; background: #C4572A; display: inline-block; margin-right: 8px; transform: rotate(45deg); flex: none; }
+.sec h3 { justify-content: flex-start; }
+.sec h3 > :last-child:not(:first-child) { margin-left: auto; }
+.btn.primary { background: #C4572A; border-color: #C4572A; color: #FFF8EC; }
+.btn.primary:hover { background: #A8481F; }
+.slider input[type=range] { accent-color: #C4572A; }
+.kpi, .decision .margins div { background: var(--bg-2); box-shadow: 0 1px 0 rgba(43, 33, 27, .06); }
+.decision { background: linear-gradient(180deg, rgba(196, 87, 42, .10), rgba(196, 87, 42, 0)); }
+table.cmp td.active { color: #A8481F; }
+.demohint { top: 48px; }
+.mapwrap { background: #D9CBB3; }
+.sec h3 > * { margin-left: auto; }
+.sec h3 .seg button { padding: 5px 7px; }

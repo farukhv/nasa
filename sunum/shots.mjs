@@ -1,5 +1,5 @@
 // Captures 1920x1080 screenshots of the running app (http://localhost:5173) for the jury deck.
-import { chromium } from 'playwright';
+import { chromium } from './../app/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
 const OUT = new URL('./assets/shots/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 fs.mkdirSync(OUT, { recursive: true });
