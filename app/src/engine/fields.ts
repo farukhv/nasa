@@ -84,7 +84,7 @@ export function novelty(scene: SceneData, pois: POI[]): Float32Array {
   return out;
 }
 
-/** Rock abundance (%) → walking hazard index 0..100 (ARA-RAPOR-1 §2.2 table, Golombek trip-band analysis). */
+/** Rock abundance (%) → walking hazard index 0..100 (Golombek trip-band analysis). */
 export function kRisk(kPct: number): number {
   const xs = [0, 5, 10, 20, 40, 60], ys = [0, 15, 30, 55, 85, 100];
   if (kPct >= 60) return 100;

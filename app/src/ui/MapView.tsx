@@ -4,6 +4,7 @@ import type { SceneDef } from '../scenes';
 import type { PlanResult, POI, RoutePoint, RouteResult } from '../engine/types';
 import { TERRAIN_CLASSES } from '../engine/config';
 import type { Tool } from '../App';
+import { useI18n } from '../i18n';
 import { fmt } from './bits';
 
 export type LayerId = 'none' | 'S' | 'V' | 'C' | 'CLS' | 'K' | 'E' | 'H' | 'shade' | 'comm';
@@ -13,8 +14,6 @@ const SCI_BLUE = '#4C9BFF', SCI_RGB = [76, 155, 255];
 // one hue + one line pattern per route, so they never read alike
 export const ROUTE_COL = { A: '#3DDC84', B: '#35D6F5', ghost: '#F4F7F9', rover: '#D9A877', warn: '#FFC23D', risk: '#FF4FA8' };
 const ROUTE_RGB = { A: [61, 220, 132], B: [53, 214, 245] };
-const ROUTE_NAME = { A: 'Ana rota (A)', B: 'B planı (yedek rota)' };
-const ROUTE_DESC = { A: 'Önerilen yol', B: 'Ana rota kapanırsa kullanılacak yol' };
 interface Feat { key: string; title: string; desc: string; col: string; dashed?: boolean; round?: boolean }
 const C = {
   safe: [95, 227, 176], caution: [255, 194, 61], nogo: [255, 79, 168], science: [79, 216, 255], comms: [244, 247, 249],
@@ -35,6 +34,8 @@ interface Props {
 }
 
 export default function MapView(p: Props) {
+  const { t, lang } = useI18n();
+  const m = t.map;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
@@ -101,7 +102,7 @@ export default function MapView(p: Props) {
     const dpr = window.devicePixelRatio || 1;
     cv.width = el.clientWidth * dpr; cv.height = el.clientHeight * dpr; cv.style.width = el.clientWidth + 'px'; cv.style.height = el.clientHeight + 'px';
     const ctx = cv.getContext('2d')!; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#D9CBB3'; ctx.fillRect(0, 0, el.clientWidth, el.clientHeight);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-0').trim() || '#D9CBB3'; ctx.fillRect(0, 0, el.clientWidth, el.clientHeight);
     if (!img) return;
     const hot = tip?.feat?.key ?? null;
     const { s, ox, oy } = view;
@@ -142,7 +143,7 @@ export default function MapView(p: Props) {
         if (hot === 'ghost') { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 9; ctx.stroke(); }
         ctx.strokeStyle = '#0E1114'; ctx.lineWidth = 3.5; ctx.stroke();
         ctx.strokeStyle = ROUTE_COL.ghost; ctx.lineWidth = 1.5; ctx.lineCap = 'butt'; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
-        tag('İLK PLAN', ROUTE_COL.ghost); return;
+        tag(m.tagFirst, ROUTE_COL.ghost); return;
       }
       const prim = style === 'primary', col = ROUTE_COL[r.id];
       if (hot === 'route-' + r.id) { ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = prim ? 15 : 12; ctx.stroke(); }
@@ -161,9 +162,9 @@ export default function MapView(p: Props) {
           const a = r.points[Math.max(0, i - 4)], [x0, y0] = g2s(a.x + .5, a.y + .5), [x1, y1] = g2s(b.x + .5, b.y + .5), ang = Math.atan2(y1 - y0, x1 - x0);
           ctx.save(); ctx.translate(x1, y1); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(2, 0); ctx.lineTo(-7, 6); ctx.strokeStyle = '#0E1114'; ctx.lineWidth = 5; ctx.stroke(); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
         }
-        if (r.pointOfNoReturn !== null) { const pt = r.points[r.pointOfNoReturn], [x, y] = g2s(pt.x + .5, pt.y + .5); octagon(ctx, x, y, 9, ROUTE_COL.risk); label(ctx, x + 12, y - 10, 'DÖNÜŞÜ YOK', ROUTE_COL.risk); }
+        if (r.pointOfNoReturn !== null) { const pt = r.points[r.pointOfNoReturn], [x, y] = g2s(pt.x + .5, pt.y + .5); octagon(ctx, x, y, 9, ROUTE_COL.risk); label(ctx, x + 12, y - 10, m.noReturn, ROUTE_COL.risk); }
       }
-      tag(r.id === 'A' ? 'A · ANA ROTA' : 'B · B PLANI', col);
+      tag(p.emergency && prim ? m.tagShelter : r.id === 'A' ? m.tagA : m.tagB, col);
     };
     if (p.ghost) drawRoute(p.ghost, 'ghost');
     const other = p.result?.routes.find(r => r !== p.active); if (other) drawRoute(other, 'alt');
@@ -177,7 +178,7 @@ export default function MapView(p: Props) {
         ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,59,48,0.25)'; ctx.fill();
         ctx.fillStyle = '#0E1114'; ctx.fillRect(x - 8, y - 8, 16, 16); ctx.fillStyle = RED; ctx.fillRect(x - 6, y - 6, 12, 12);
         ctx.fillStyle = '#F4F7F9'; ctx.font = '600 9px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(h.id, x, y + .5);
-        label(ctx, x + 14, y - 12, `SAKLAN · ${h.id}`, RED);
+        label(ctx, x + 14, y - 12, m.takeCover(h.id), RED);
       } else {
         ctx.fillStyle = '#0E1114'; ctx.fillRect(x - 8, y - 8, 16, 16); ctx.fillStyle = '#F4F7F9'; ctx.fillRect(x - 6, y - 6, 12, 12); ctx.strokeStyle = '#5FE3B0'; ctx.lineWidth = 2; ctx.strokeRect(x - 6, y - 6, 12, 12);
         ctx.fillStyle = '#0E1114'; ctx.font = '600 9px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(h.id, x, y + .5);
@@ -194,12 +195,12 @@ export default function MapView(p: Props) {
       label(ctx, x + 14, y - 12, poi.name, k >= 0 ? col : '#A3ABB2');
     });
     const shelterCol = p.emergency ? RED : '#F4F7F9';
-    { const [x, y] = g2s(p.base.x + .5, p.base.y + .5); if (p.emergency) { ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,59,48,0.25)'; ctx.fill(); } ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = '#0E1114'; ctx.fillRect(-9, -9, 18, 18); ctx.fillStyle = shelterCol; ctx.fillRect(-6, -6, 12, 12); ctx.restore(); label(ctx, x + 14, y + 4, p.emergency ? 'SIĞINAK · HABİTAT' : 'HABİTAT', shelterCol); }
-    if (p.rover) { const [x, y] = g2s(p.rover.x + .5, p.rover.y + .5); if (p.emergency) { ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,59,48,0.25)'; ctx.fill(); } ctx.fillStyle = '#0E1114'; ctx.fillRect(x - 9, y - 7, 18, 14); ctx.fillStyle = shelterCol; ctx.fillRect(x - 7, y - 5, 14, 10); ctx.fillStyle = p.emergency ? '#F4F7F9' : '#0E1114'; ctx.font = '600 9px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('R', x, y + .5); label(ctx, x + 14, y - 10, p.emergency ? 'SIĞINAK · ROVER' : 'ROVER', shelterCol); }
-    if (p.currentPt) { const pt = p.currentPt, [x, y] = g2s(pt.x + .5, pt.y + .5); ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = 'rgba(244,247,249,.25)'; ctx.fill(); ctx.strokeStyle = '#F4F7F9'; ctx.lineWidth = 2.5; ctx.stroke(); label(ctx, x + 14, y + 4, 'ASTRONOT', '#F4F7F9'); }
+    { const [x, y] = g2s(p.base.x + .5, p.base.y + .5); if (p.emergency) { ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,59,48,0.25)'; ctx.fill(); } ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = '#0E1114'; ctx.fillRect(-9, -9, 18, 18); ctx.fillStyle = shelterCol; ctx.fillRect(-6, -6, 12, 12); ctx.restore(); label(ctx, x + 14, y + 4, p.emergency ? m.shelterHabitat : m.habitat, shelterCol); }
+    if (p.rover) { const [x, y] = g2s(p.rover.x + .5, p.rover.y + .5); if (p.emergency) { ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,59,48,0.25)'; ctx.fill(); } ctx.fillStyle = '#0E1114'; ctx.fillRect(x - 9, y - 7, 18, 14); ctx.fillStyle = shelterCol; ctx.fillRect(x - 7, y - 5, 14, 10); ctx.fillStyle = p.emergency ? '#F4F7F9' : '#0E1114'; ctx.font = '600 9px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('R', x, y + .5); label(ctx, x + 14, y - 10, p.emergency ? m.shelterRover : m.rover, shelterCol); }
+    if (p.currentPt) { const pt = p.currentPt, [x, y] = g2s(pt.x + .5, pt.y + .5); ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = 'rgba(244,247,249,.25)'; ctx.fill(); ctx.strokeStyle = '#F4F7F9'; ctx.lineWidth = 2.5; ctx.stroke(); label(ctx, x + 14, y + 4, m.astronaut, '#F4F7F9'); }
     if (p.hover !== null && p.active) { const pt = p.active.points[Math.min(p.hover, p.active.points.length - 1)]; if (pt) { const [x, y] = g2s(pt.x + .5, pt.y + .5); ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.strokeStyle = '#F4F7F9'; ctx.lineWidth = 2; ctx.stroke(); } }
     for (const [x, y, text, col] of tags) label(ctx, x, y, text, col);
-  }, [img, view, overlay, vetoCv, corridorCv, p, ds, tip?.feat?.key]);
+  }, [img, view, overlay, vetoCv, corridorCv, p, ds, tip?.feat?.key, m]);
 
   const toGrid = (e: React.MouseEvent) => { const r = wrapRef.current!.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top; const gx = (sx - view.ox) / view.s / ds, gy = (sy - view.oy) / view.s / ds; return { gx, gy, sx, sy, inside: gx >= 0 && gy >= 0 && gx < W && gy < H }; };
   const onWheel = (e: React.WheelEvent) => { const r = wrapRef.current!.getBoundingClientRect(); const mx = e.clientX - r.left, my = e.clientY - r.top; const f = Math.exp(-e.deltaY * 0.0012); setView(v => { const s = Math.min(40, Math.max(0.05, v.s * f)); const k = s / v.s; return { s, ox: mx - (mx - v.ox) * k, oy: my - (my - v.oy) * k }; }); };
@@ -210,28 +211,28 @@ export default function MapView(p: Props) {
     const order = p.active?.order ?? [];
     for (const poi of p.pois) if (near(poi.x, poi.y, 13)) {
       const k = order.indexOf(poi.id), user = poi.kind === 'user';
-      return { hoverIdx: null, feat: { key: 'poi-' + poi.id, title: poi.name, round: true, col: k >= 0 ? (user ? '#F4F7F9' : SCI_BLUE) : '#A3ABB2', desc: `${user ? 'Kullanıcı hedefi' : 'Bilimsel hedef'} · ${k >= 0 ? `${k + 1}. durak` : 'bu rotada ziyaret edilmiyor'}` } };
+      return { hoverIdx: null, feat: { key: 'poi-' + poi.id, title: poi.name, round: true, col: k >= 0 ? (user ? '#F4F7F9' : SCI_BLUE) : '#A3ABB2', desc: `${user ? m.userTarget : m.scienceTarget} · ${k >= 0 ? m.stop(k + 1) : m.notVisited}` } };
     }
-    if (near(p.base.x + .5, p.base.y + .5, 13)) return { hoverIdx: null, feat: { key: 'base', title: 'Habitat (üs)', desc: 'Yürüyüşün başladığı ve bittiği sığınak', col: '#F4F7F9' } };
-    if (p.rover && near(p.rover.x + .5, p.rover.y + .5, 13)) return { hoverIdx: null, feat: { key: 'rover', title: 'Basınçlı rover', desc: 'İkinci sığınak', col: '#F4F7F9' } };
+    if (near(p.base.x + .5, p.base.y + .5, 13)) return { hoverIdx: null, feat: { key: 'base', title: m.baseTitle, desc: m.baseDesc, col: '#F4F7F9' } };
+    if (p.rover && near(p.rover.x + .5, p.rover.y + .5, 13)) return { hoverIdx: null, feat: { key: 'rover', title: m.roverTitle, desc: m.roverDesc, col: '#F4F7F9' } };
     if (p.showHavens && p.active) for (const h of p.active.havens) {
       if (h.id === 'BASE' || h.id === 'ROVER') continue;
-      if (near(h.x + .5, h.y + .5, 11)) return { hoverIdx: null, feat: { key: 'haven-' + h.id, title: `Bekleme noktası ${h.id}`, desc: 'Acil durumda beklenecek korunaklı yer', col: '#5FE3B0' } };
+      if (near(h.x + .5, h.y + .5, 11)) return { hoverIdx: null, feat: { key: 'haven-' + h.id, title: m.waitTitle(h.id), desc: m.waitDesc, col: '#5FE3B0' } };
     }
     const nearest = (pts: { x: number; y: number }[], lim: number) => { let bi = -1, bd = px(lim); for (let i = 0; i < pts.length; i++) { const d = Math.hypot(pts[i].x + .5 - gx, pts[i].y + .5 - gy); if (d < bd) { bd = d; bi = i; } } return bi; };
-    const routeFeat = (r: RouteResult, sel: boolean): Feat => ({ key: 'route-' + r.id, title: ROUTE_NAME[r.id], col: ROUTE_COL[r.id], dashed: r.id === 'B', desc: `${ROUTE_DESC[r.id]}${sel ? ' · seçili' : ''} · ${fmt(r.totals.distM)} m · ${fmt(r.totals.tMin)} dk` });
+    const routeFeat = (r: RouteResult, sel: boolean): Feat => ({ key: 'route-' + r.id, title: p.emergency && sel ? m.shelterRoute : r.id === 'A' ? m.routeA : m.routeB, col: ROUTE_COL[r.id], dashed: r.id === 'B', desc: `${p.emergency && sel ? m.shelterRouteDesc : r.id === 'A' ? m.routeADesc : m.routeBDesc}${sel ? ` · ${m.selected}` : ''} · ${fmt(r.totals.distM)} m · ${fmt(r.totals.tMin)} ${t.u.min}` });
     if (p.active) { const i = nearest(p.active.points, 10); if (i >= 0) return { hoverIdx: i, feat: routeFeat(p.active, true) }; }
     const other = p.result?.routes.find(r => r !== p.active);
     if (other && nearest(other.points, 9) >= 0) return { hoverIdx: null, feat: routeFeat(other, false) };
-    if (p.ghost && nearest(p.ghost.points, 8) >= 0) return { hoverIdx: null, feat: { key: 'ghost', title: 'İlk plan', desc: 'Senaryo değişmeden önceki ana rota', col: ROUTE_COL.ghost, dashed: true } };
+    if (p.ghost && nearest(p.ghost.points, 8) >= 0) return { hoverIdx: null, feat: { key: 'ghost', title: m.firstPlan, desc: m.firstPlanDesc, col: ROUTE_COL.ghost, dashed: true } };
     if (p.showRover && p.roverTrack) for (const seg of p.roverTrack.traverse) for (let i = 1; i < seg.length; i++) {
       const [ax, ay] = seg[i - 1], [bx, by] = seg[i], dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((gx - ax) * dx + (gy - ay) * dy) / (dx * dx + dy * dy || 1)));
-      if (near(ax + t * dx, ay + t * dy, 7)) return { hoverIdx: null, feat: { key: 'rover-track', title: 'Perseverance izi', desc: 'Gezginin gerçekten sürdüğü yol', col: ROUTE_COL.rover, dashed: true } };
+      if (near(ax + t * dx, ay + t * dy, 7)) return { hoverIdx: null, feat: { key: 'rover-track', title: m.track, desc: m.trackDesc, col: ROUTE_COL.rover, dashed: true } };
     }
     const idx = Math.floor(gy) * W + Math.floor(gx), fl = p.result?.fields;
-    if (fl?.veto[idx]) return { hoverIdx: null, feat: p.scene.DV[idx] <= 10 ? { key: 'nodata', title: 'Veri yok', desc: 'Bu hücre için ölçüm yok, rota giremez', col: '#787E84' } : { key: 'veto', title: 'Yasak bölge (veto)', desc: 'Çok dik, çok kayalık ya da tehlikeli zemin', col: ROUTE_COL.risk } };
-    if (p.showCorridor && p.active?.corridor.mask[idx]) return { hoverIdx: null, feat: { key: 'corridor', title: 'Güvenli koridor', desc: 'Rotadan sapılabilecek şerit', col: ROUTE_COL[p.active.id] } };
-    if (fl && fl.V[idx] >= 70) return { hoverIdx: null, feat: { key: 'sci', title: 'Bilimsel değeri yüksek alan', desc: 'Durup incelemeye değer zemin', col: SCI_BLUE } };
+    if (fl?.veto[idx]) return { hoverIdx: null, feat: p.scene.DV[idx] <= 10 ? { key: 'nodata', title: m.noData, desc: m.noDataDesc, col: '#787E84' } : { key: 'veto', title: m.veto, desc: m.vetoDesc, col: ROUTE_COL.risk } };
+    if (p.showCorridor && p.active?.corridor.mask[idx]) return { hoverIdx: null, feat: { key: 'corridor', title: m.corridor, desc: m.corridorDesc, col: ROUTE_COL[p.active.id] } };
+    if (fl && fl.V[idx] >= 70) return { hoverIdx: null, feat: { key: 'sci', title: m.science, desc: m.scienceDesc, col: SCI_BLUE } };
     return { hoverIdx: null, feat: null };
   };
   const onMove = (e: React.MouseEvent) => {
@@ -259,12 +260,12 @@ export default function MapView(p: Props) {
       {tip && tipIdx >= 0 && (
         <div className="tip" style={{ left: Math.max(4, Math.min(tip.x + 14, (wrapRef.current?.clientWidth ?? 400) - 270)), ...(tip.y > (wrapRef.current?.clientHeight ?? 400) - 190 ? { bottom: (wrapRef.current?.clientHeight ?? 400) - tip.y + 12 } : { top: tip.y + 14 }) }}>
           {tip.feat && <div className="what"><i className={tip.feat.dashed ? 'dash' : tip.feat.round ? 'dot' : ''} style={{ color: tip.feat.col }} /><div><b>{tip.feat.title}</b><span>{tip.feat.desc}</span></div></div>}
-          <div className="r"><span className="label">{TERRAIN_CLASSES[p.scene.cls[tipIdx]]?.name}</span><span>{fmt(p.scene.elev[tipIdx], 1)} m</span></div>
-          <div className="r"><span>Kaya · eğim · gökyüzü</span><span>%{p.scene.K[tipIdx]} · {p.scene.E[tipIdx]}° · %{p.scene.SVF[tipIdx]}</span></div>
+          <div className="r"><span className="label">{TERRAIN_CLASSES[p.scene.cls[tipIdx]]?.name[lang]}</span><span>{fmt(p.scene.elev[tipIdx], 1)} m</span></div>
+          <div className="r"><span>{m.rockSlopeSky}</span><span>{t.u.pct(p.scene.K[tipIdx])} · {p.scene.E[tipIdx]}° · {t.u.pct(p.scene.SVF[tipIdx])}</span></div>
           {f && <>
-            <div className="r"><span>Güvenlik / bilim / güven</span><span><b className={f.S[tipIdx] < 50 ? 'bad' : f.S[tipIdx] < 70 ? 'warn' : 'ok'}>{f.S[tipIdx]}</b> / <span className="sci">{f.V[tipIdx]}</span> / {f.C[tipIdx]}</span></div>
-            <div className="r"><span>Üsse dönüş O₂</span><span>{f.o2Ret[tipIdx] > 1e30 ? '∞' : fmt(f.o2Ret[tipIdx], 3)} kg</span></div>
-            <div className="r"><span>{f.shade[tipIdx] ? 'gölge' : 'güneş'} · {f.comm[tipIdx] ? 'LOS var' : 'LOS yok'}</span><span className={f.veto[tipIdx] ? 'bad' : ''}>{f.veto[tipIdx] ? (p.scene.DV[tipIdx] <= 10 ? 'VERİ YOK' : 'VETO') : ''}</span></div>
+            <div className="r"><span>{m.scores}</span><span><b className={f.S[tipIdx] < 50 ? 'bad' : f.S[tipIdx] < 70 ? 'warn' : 'ok'}>{f.S[tipIdx]}</b> / <span className="sci">{f.V[tipIdx]}</span> / {f.C[tipIdx]}</span></div>
+            <div className="r"><span>{m.returnO2}</span><span>{f.o2Ret[tipIdx] > 1e30 ? '∞' : fmt(f.o2Ret[tipIdx], 3)} kg</span></div>
+            <div className="r"><span>{f.shade[tipIdx] ? m.shade : m.sun} · {f.comm[tipIdx] ? m.los : m.noLos}</span><span className={f.veto[tipIdx] ? 'bad' : ''}>{f.veto[tipIdx] ? (p.scene.DV[tipIdx] <= 10 ? m.noDataFlag : m.vetoFlag) : ''}</span></div>
           </>}
         </div>
       )}

@@ -1,7 +1,7 @@
 {
-  "name": "app",
+  "name": "martian-map-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,7 +19,6 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.90.0",
-    "playwright": "^1.65.1",
     "typescript": "~7.0.2",
     "vite": "^8.3.6"
   }

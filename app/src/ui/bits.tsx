@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Provenance } from '../engine/config';
+import { useI18n } from '../i18n';
 
 export const fmt = (v: number, d = 0) => (Number.isFinite(v) ? v.toFixed(d) : '—');
 
@@ -16,10 +17,12 @@ export function Slider({ label, v, set, min, max, step, unit, fmtv }: { label: s
     <input type="range" min={min} max={max} step={step} value={v} onChange={e => set(parseFloat(e.target.value))} /></div>;
 }
 
+const PROVENANCE_CLASS: Record<string, string> = { Observed: 'obs', Derived: 'der', Modelled: 'mod', Assumed: 'ass', Spec: 'der' };
+
 export function Prov({ p }: { p: Provenance | 'Spec' | string }) {
-  const m: Record<string, [string, string]> = { Observed: ['obs', 'Gözlenen'], Derived: ['der', 'Türetilmiş'], Modelled: ['mod', 'Modellenmiş'], Assumed: ['ass', 'Varsayım'], Spec: ['der', 'Ekip spek.'] };
-  const [c, t] = m[p] ?? ['', p];
-  return <span className={`chip ${c}`}>{t}</span>;
+  const { t } = useI18n();
+  const label = (t.provenance as Record<string, string>)[p] ?? p;
+  return <span className={`chip ${PROVENANCE_CLASS[p] ?? ''}`}>{label}</span>;
 }
 
 export function Verdict({ level, text }: { level: 'go' | 'caution' | 'nogo' | 'idle'; text: string }) {

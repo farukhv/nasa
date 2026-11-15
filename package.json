@@ -1,0 +1,18 @@
+{
+  "name": "martian-map",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hyperlocal EVA route planner and decision support for astronauts on Mars (NASA Space Apps 2026).",
+  "type": "module",
+  "engines": { "node": ">=20.19" },
+  "scripts": {
+    "setup": "node scripts/ensure-deps.mjs",
+    "predev": "node scripts/ensure-deps.mjs",
+    "dev": "npm --prefix app run dev",
+    "prebuild": "node scripts/ensure-deps.mjs",
+    "build": "npm --prefix app run build",
+    "prepreview": "node scripts/ensure-deps.mjs",
+    "preview": "npm --prefix app run preview",
+    "lint": "npm --prefix app run lint"
+  }
+}

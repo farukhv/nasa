@@ -4,7 +4,7 @@ import path from 'node:path'
 
 export default defineConfig({
   plugins: [react()],
-  publicDir: path.resolve(__dirname, '../data/public'),
-  server: { port: 5173, strictPort: true },
+  publicDir: path.resolve(import.meta.dirname, '../data/public'),
+  server: { port: 5173 },
   worker: { format: 'es' },
 })

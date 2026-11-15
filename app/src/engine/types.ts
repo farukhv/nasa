@@ -42,7 +42,10 @@ export interface EnvState {
   buddy: boolean;          // second astronaut follows 60 s behind; mutual LOS checked
 }
 
+export type Lang = 'tr' | 'en';
+
 export interface PlanRequest {
+  lang?: Lang;             // language of the generated explanations and warnings (default tr)
   baseIdx: number;
   startIdx?: number;       // current astronaut position (replanning mid-EVA); default = base
   roverIdx?: number | null;// pressurised rover position (real shelter); null = none

@@ -1,12 +1,15 @@
+# dependencies and build output
 node_modules/
 app/dist/
+
+# raw and intermediate data (re-created by pipeline/)
 data/raw/
-data/tiles_probe/
 data/derived/
+data/tiles_probe/
 *.tif
-WhatsApp Image*
+
+# tooling
 __pycache__/
-sunum/preview/
 *.log
 .DS_Store
 Thumbs.db

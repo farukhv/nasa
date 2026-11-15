@@ -1,4 +1,5 @@
 import type { PlannerConfig } from './config';
+import { ENGINE_MESSAGES, type EngineMessages } from './messages';
 import type { SceneData, POI, PlanRequest, PlanResult, RouteResult, RoutePoint, EnvState, StraightLineEval, EvaWindowHour } from './types';
 import { computeFields, horizonAt, type Fields } from './fields';
 import { makeCostModel, dijkstra, astar, backtrack, distanceTransform, DX, DY, type CostModel } from './search';
@@ -8,7 +9,7 @@ import { stepWater, airTempC, sunAzimuth, sunElevation } from './physio';
 const INF = 3e38;
 const retCache = new Map<string, { veto0: Uint8Array; o2Ret: Float32Array }>();
 const shelterCache = new Map<string, Float32Array>();
-const CLASS_TR = ['sıkı toprak', 'anakaya', 'kayalık', 'kaya tarlası', 'kum dalgası', 'krater kenarı'];
+let M: EngineMessages = ENGINE_MESSAGES.tr;   // set per plan() call; the worker handles one request at a time
 
 function idxOf(scene: SceneData, p: { x: number; y: number }) {
   const W = scene.meta.W, H = scene.meta.H;
@@ -86,7 +87,7 @@ function orienteer(scene: SceneData, cfg: PlannerConfig, veto: Uint8Array, cm: C
   planC.push(new Array(n).fill(INF)); o2C.push(new Array(n).fill(INF)); tC.push(new Array(n).fill(INF)); paths.push(new Array(n).fill(null));
   const skipped: { id: string; reason: string }[] = [];
   const live: number[] = [];
-  targets.forEach((_t, k) => { const q = k + 1; if (planC[0][q] < INF && planC[q][B] < INF) live.push(q); else skipped.push({ id: nodes[q].id, reason: 'Veto dışı güvenli bir yol yok' }); });
+  targets.forEach((_t, k) => { const q = k + 1; if (planC[0][q] < INF && planC[q][B] < INF) live.push(q); else skipped.push({ id: nodes[q].id, reason: M.noSafePath }); });
   const m = live.length, size = 1 << m;
   const dp = new Float32Array(size * m).fill(INF), dt = new Float32Array(size * m).fill(INF), par = new Int32Array(size * m).fill(-1);
   const dwellMin = (k: number) => nodes[k].poi?.dwellMin ?? 15;
@@ -114,9 +115,9 @@ function orienteer(scene: SceneData, cfg: PlannerConfig, veto: Uint8Array, cm: C
   if (bestJ >= 0) { let mask = bestMask, j = bestJ; while (j >= 0) { order.unshift(live[j]); const pj = par[mask * m + j]; mask &= ~(1 << j); j = pj; } }
   for (const k of live) if (!order.includes(k)) {
     const soloO2 = o2C[0][k] + dwellO2(k) + o2C[k][B], soloT = tC[0][k] + dwellMin(k) + tC[k][B];
-    skipped.push({ id: nodes[k].id, reason: soloT > minutesBudget ? `süre bütçesi (${minutesBudget} dk) yetmiyor` : soloO2 > usable ? `O₂ bütçesi (kullanılabilir ${usable.toFixed(2)} kg) yetmiyor` : 'diğer hedeflerle birlikte bütçeye sığmıyor; daha düşük bilim değeri' });
+    skipped.push({ id: nodes[k].id, reason: soloT > minutesBudget ? M.skipTime(minutesBudget) : soloO2 > usable ? M.skipO2(usable.toFixed(2)) : M.skipOther });
   }
-  if (m > 0) log.push(`Orienteering DP: ${m} hedef, ${size * m} durum; ${order.length} hedef seçildi (O₂ ${bestO2.toFixed(3)} ≤ ${usable.toFixed(3)} kg, süre ${bestT.toFixed(0)} ≤ ${minutesBudget.toFixed(0)} dk). Bütçe dışı kombinasyon: O₂ ${o2Bound}, süre ${tBound}.`);
+  if (m > 0) log.push(M.ordering(m, size * m, order.length, bestO2.toFixed(3), usable.toFixed(3), bestT.toFixed(0), minutesBudget.toFixed(0), String(o2Bound), String(tBound)));
   const seq = [0, ...order, B];
   const legs: Leg[] = [];
   if (fine) {
@@ -225,8 +226,8 @@ function pickHavens(scene: SceneData, cfg: PlannerConfig, f: Fields, veto: Uint8
   if (preset) hf = preset;
   else {
     const bx = baseIdx % W, by = (baseIdx / W) | 0;
-    const shelters: POI[] = [{ id: 'BASE', name: 'Habitat / iniş aracı', x: bx, y: by, kind: 'haven', value: 0, note: 'Gerçek sığınak' }];
-    if (roverIdx !== null && roverIdx !== undefined && !env.roverLost) shelters.push({ id: 'ROVER', name: 'Basınçlı rover', x: roverIdx % W, y: (roverIdx / W) | 0, kind: 'haven', value: 0, note: 'Gerçek sığınak (mobil)' });
+    const shelters: POI[] = [{ id: 'BASE', name: M.baseName, x: bx, y: by, kind: 'haven', value: 0, note: M.shelterNote }];
+    if (roverIdx !== null && roverIdx !== undefined && !env.roverLost) shelters.push({ id: 'ROVER', name: M.roverName, x: roverIdx % W, y: (roverIdx / W) | 0, kind: 'haven', value: 0, note: M.shelterMobileNote });
     let sMax = 0; for (let i = 0; i < W * H; i += 7) if (f.S[i] > sMax) sMax = f.S[i];
     const minS = Math.min(cfg.haven.minS, sMax - 10);
     const score = (i: number) => {
@@ -253,7 +254,7 @@ function pickHavens(scene: SceneData, cfg: PlannerConfig, f: Fields, veto: Uint8
       const hx = bi % W, hy = (bi / W) | 0;
       if (havens.some(h => Math.hypot((h.x - hx) * cell_dx, (h.y - hy) * cell_dy) < 40)) continue;
       const k = havens.length - shelters.length + 1;
-      havens.push({ id: `W${k}`, name: `Bekleme noktası ${k}`, x: hx, y: hy, kind: 'haven', value: 0, note: `S=${f.S[bi].toFixed(0)}, gökyüzü görüşü %${svf[bi]}, eğim ${E[bi]}°, doz ≈ −${(100 * cfg.radiation.svfDoseSlope * (1 - svf[bi] / 100)).toFixed(0)} %` });
+      havens.push({ id: `W${k}`, name: M.waitName(k), x: hx, y: hy, kind: 'haven', value: 0, note: M.waitNote(f.S[bi].toFixed(0), svf[bi], E[bi], (100 * cfg.radiation.svfDoseSlope * (1 - svf[bi] / 100)).toFixed(0)) });
     }
     const budgetS = cfg.haven.maxMinutes * 60;
     const rH = dijkstra(scene, veto, cm.time, cm.stepLen, havens.map(h => idxOf(scene, h)), { reverse: true, cutoff: budgetS * 2.5, quantum: cm.quanta.time }).dist;
@@ -333,6 +334,7 @@ function evaWindow(scene: SceneData, cfg: PlannerConfig, env: EnvState, pts: Rou
 }
 
 export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest, allPois: POI[]): PlanResult {
+  M = ENGINE_MESSAGES[reqIn.lang ?? 'tr'];
   let cfg = cfgIn, req = reqIn;
   const t0 = performance.now(), timing: Record<string, number> = {}, explain: string[] = [];
   const { W, H } = scene.meta, n = W * H, env = req.env;
@@ -342,7 +344,7 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
   if (sep) {
     cfg = { ...cfg, safety: { ...cfg.safety, R: cfg.safety.R * 3 } };
     req = { ...req, mode: 'rtb', targets: [], wantPlanB: false };
-    explain.push('SEP uyarısı: keşif iptal. Bilim ödülü sıfır (w_v=0), radyasyon ağırlığı ×3; mevcut konumdan en yakın GERÇEK sığınağa (habitat/rover) rota.');
+    explain.push(M.sepExplain);
   }
 
   let s = performance.now();
@@ -355,13 +357,13 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
     cached = { veto0: f0.veto, o2Ret: dijkstra(scene, f0.veto, cmRtb.o2, cmRtb.stepLen, [req.baseIdx], { reverse: true, quantum: cmRtb.quanta.o2 }).dist };
     if (retCache.size > 6) retCache.clear();
     retCache.set(retKey, cached);
-  } else explain.push('Dönüş-O₂ alanı önbellekten.');
+  } else explain.push(M.cacheHit);
   const o2Ret = cached.o2Ret;
   const f = computeFields(scene, cfg, env, req.baseIdx, allPois, o2Ret, req.o2BudgetKg, req.mode === 'rtb' || sep);
   lap('fields', s);
-  explain.push(`Güneş: azimut ${f.sunAz.toFixed(0)}°, yükseklik ${f.sunEl.toFixed(0)}° (LTST ${env.ltst.toFixed(1)}, Ls ${env.ls.toFixed(0)}°); hava ${f.tAir.toFixed(0)} °C; gölge %${(100 * f.shade.reduce((a, b) => a + b, 0) / n).toFixed(1)}; üs ile görüş hattı dışı %${(100 * (1 - f.comm.reduce((a, b) => a + b, 0) / n)).toFixed(1)}.`);
+  explain.push(M.sun(f.sunAz.toFixed(0), f.sunEl.toFixed(0), env.ltst.toFixed(1), env.ls.toFixed(0), f.tAir.toFixed(0), (100 * f.shade.reduce((a, b) => a + b, 0) / n).toFixed(1), (100 * (1 - f.comm.reduce((a, b) => a + b, 0) / n)).toFixed(1)));
   let vetoPct = 0; for (let i = 0; i < n; i++) vetoPct += f.veto[i]; vetoPct = 100 * vetoPct / n;
-  explain.push(`Veto hücreleri %${vetoPct.toFixed(1)}: eğim>${cfg.veto.E}°, kaya>%${cfg.veto.K}, zemin>${cfg.veto.Z}${sep ? '' : `, R>${cfg.veto.R}`}, T>${cfg.veto.T}.`);
+  explain.push(M.veto(vetoPct.toFixed(1), cfg.veto, sep));
 
   const baseIdx = snap(scene, f.veto, req.baseIdx) ?? req.baseIdx;
   const startIdx = snap(scene, f.veto, req.startIdx ?? baseIdx) ?? baseIdx;
@@ -371,7 +373,7 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
   const cm = cmFor(env.sampleKg);
   const cPoi = (idx: number) => f.C[idx];
   const o2Used = req.o2UsedKg ?? 0, minutesUsed = req.minutesUsed ?? 0;
-  explain.push(`Başlangıç: ${startIdx === baseIdx ? 'habitat' : `mevcut konum (${startIdx % W}, ${(startIdx / W) | 0})`}; harcanan O₂ ${o2Used.toFixed(3)} kg, geçen ${minutesUsed.toFixed(0)} dk; hedef ${targets.length}; rover ${roverIdx != null ? 'var' : 'yok'}.`);
+  explain.push(M.start(startIdx === baseIdx ? null : [startIdx % W, (startIdx / W) | 0], o2Used.toFixed(3), minutesUsed.toFixed(0), targets.length, roverIdx != null));
 
   s = performance.now();
   const routes: RouteResult[] = [];
@@ -389,7 +391,7 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
     }
     if (best && best.path.length > 1) { legs = [{ from: 'START', to: best.id, path: best.path, planCost: 0 }]; shelterCountdownMin = best.t; nodes = [{ id: 'START', idx: startIdx, poi: null }, { id: best.id, idx: best.path[best.path.length - 1], poi: null }]; }
     else if (best) shelterCountdownMin = 0;
-    explain.push(best ? `Sığınağa süre: ${best.t.toFixed(1)} dk (${best.id === 'ROVER' ? 'rover' : 'habitat'}).` : 'Hiçbir sığınağa veto dışı yol yok!');
+    explain.push(best ? M.shelterTime(best.t.toFixed(1), best.id === 'ROVER') : M.noShelter);
   } else {
     let r: ReturnType<typeof orienteer> | null = null;
     if (targets.length >= 2) {
@@ -400,7 +402,7 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
       const cs = c.toCoarse(startIdx), cb = c.toCoarse(baseIdx); fineIdx.set(cs, startIdx); fineIdx.set(cb, baseIdx);
       r = orienteer(c.cscene, cfg, c.cv, ccm, cs, cb, ct, req.o2BudgetKg - o2Used, req.maxMinutes - minutesUsed, ci => cPoi(fineIdx.get(ci) ?? 0), explain,
         { scene, veto: f.veto, cm, map: ci => fineIdx.get(ci) ?? ci });
-      if (r.order.length && !r.legs.length) { explain.push('Kaba ızgara sıralaması ince ızgarada çözülemedi; tam çözünürlükte yeniden.'); r = null; } else explain.push('Sıralama 2 m kaba ızgarada (veto muhafazakâr), bacaklar 1 m tam çözünürlükte A*.');
+      if (r.order.length && !r.legs.length) { explain.push(M.coarseFail); r = null; } else explain.push(M.coarseOk);
     }
     if (!r) r = orienteer(scene, cfg, f.veto, cm, startIdx, baseIdx, targets, req.o2BudgetKg - o2Used, req.maxMinutes - minutesUsed, cPoi, explain);
     legs = r.legs; order = r.order; nodes = r.nodes; skipped = r.skipped;
@@ -422,18 +424,18 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
     const minMargin = { kg: mm.margin, min: mm.margin / cfg.o2.nominalKgPerH * 60, atM: mm.distM };
     let losLoss = 0; for (const p of pts) if (!p.buddyLos) losLoss++;
     const warnings: string[] = [];
-    if (ponr !== null) warnings.push(`Dönüşü olmayan nokta: ${pts[ponr].distM.toFixed(0)} m'de O₂ rezervi (1.2× dönüş) ihlal → acil dönüş`);
-    if (score.lowConfidence) warnings.push(`Düşük veri güveni: C_rota ${score.C.toFixed(0)} < ${cfg.route.lowConfidence}`);
-    if (hv.uncoveredPct > 0) warnings.push(`Rotanın %${hv.uncoveredPct.toFixed(0)}'i bekleme noktasına ${cfg.haven.maxMinutes} dk'dan uzak`);
-    if (last.tMin > req.maxMinutes) warnings.push(`Süre bütçesi aşıldı: ${last.tMin.toFixed(0)} > ${req.maxMinutes} dk`);
-    if (last.waterKg > req.waterBudgetKg) warnings.push(`Soğutma suyu yetersiz: ${last.waterKg.toFixed(2)} > ${req.waterBudgetKg} kg`);
-    if (env.buddy && losLoss / pts.length > 0.1) warnings.push(`Eş astronot görüş hattı rotanın %${(100 * losLoss / pts.length).toFixed(0)}'inde kopuk`);
+    if (ponr !== null) warnings.push(M.warnNoReturn(pts[ponr].distM.toFixed(0)));
+    if (score.lowConfidence) warnings.push(M.warnLowConfidence(score.C.toFixed(0), cfg.route.lowConfidence));
+    if (hv.uncoveredPct > 0) warnings.push(M.warnUncovered(hv.uncoveredPct.toFixed(0), cfg.haven.maxMinutes));
+    if (last.tMin > req.maxMinutes) warnings.push(M.warnTime(last.tMin.toFixed(0), req.maxMinutes));
+    if (last.waterKg > req.waterBudgetKg) warnings.push(M.warnWater(last.waterKg.toFixed(2), req.waterBudgetKg));
+    if (env.buddy && losLoss / pts.length > 0.1) warnings.push(M.warnBuddy((100 * losLoss / pts.length).toFixed(0)));
     const worst = pts.reduce((a, p) => p.S < a.S ? p : a, pts[0]);
     const low50 = pts.filter(p => p.S < 50).length;
     const why = [
-      `En düşük güvenlik ${worst.S.toFixed(0)}, ${worst.distM.toFixed(0)} m'de (${CLASS_TR[worst.cls]}, eğim ${worst.slopeDeg}°); S<50 hücre sayısı ${low50} / ${pts.length}.`,
-      `Walk-back marjı en dar ${mm.distM.toFixed(0)} m'de: ${mm.margin >= 0 ? '+' : ''}${mm.margin.toFixed(3)} kg O₂ (≈ ${(mm.margin / cfg.o2.nominalKgPerH * 60).toFixed(0)} dk nominal tüketim).`,
-      `Gerçek sığınağa (habitat/rover) en uzak nokta ${Number.isFinite(hv.maxTS) ? hv.maxTS.toFixed(0) : '∞'} dk; ${hv.havens.length - hv.shelterCount} bekleme noktası ${cfg.haven.maxMinutes} dk içinde.`,
+      M.whySafety(worst.S.toFixed(0), worst.distM.toFixed(0), M.terrain[worst.cls], worst.slopeDeg, low50, pts.length),
+      M.whyMargin(mm.distM.toFixed(0), `${mm.margin >= 0 ? '+' : ''}${mm.margin.toFixed(3)}`, (mm.margin / cfg.o2.nominalKgPerH * 60).toFixed(0)),
+      M.whyShelter(Number.isFinite(hv.maxTS) ? hv.maxTS.toFixed(0) : '∞', hv.havens.length - hv.shelterCount, cfg.haven.maxMinutes),
     ];
     return { id, label, points: pts, order: ord, legs: legStats, score,
       totals: { distM: last.distM, tMin: last.tMin - pts[0].tMin, o2Kg: last.o2Kg - o2Used, waterKg: last.waterKg, returnO2Kg: 0 },
@@ -445,14 +447,14 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
   let window: PlanResult['window'] = { hours: [], recommendedStart: null };
   if (legs.length) {
     s = performance.now();
-    const A = finish('A', sep ? 'Sığınak rotası' : 'Birincil rota', legs, order);
+    const A = finish('A', sep ? M.labelShelter : M.labelPrimary, legs, order);
     routes.push(A);
     const seq = [legs[0].path[0], ...legs.map(l => l.path[l.path.length - 1])];
     straight = straightLine(scene, f, cm, seq);
     straight.o2Kg += order.reduce((a, id) => a + ((poiMap.get(id)?.dwellMin ?? 15) / 60) * cfg.o2.nominalKgPerH, 0); // same dwell time as A
     if (!sep) window = evaWindow(scene, cfg, env, A.points);
     lap('routeA', s);
-    explain.push(`Rota A: ${A.totals.distM.toFixed(0)} m, ${A.totals.tMin.toFixed(0)} dk, O₂ ${A.totals.o2Kg.toFixed(3)} kg; S_rota ${A.score.S.toFixed(0)} (min ${A.score.Smin.toFixed(0)}), V ${A.score.V.toFixed(0)}, C ${A.score.C.toFixed(0)}, U ${A.score.U.toFixed(0)}. Düz çizgi: ${straight.distM.toFixed(0)} m, ${straight.vetoCells} veto hücresi, min S ${straight.minS.toFixed(0)}.`);
+    explain.push(M.routeA(A.totals.distM.toFixed(0), A.totals.tMin.toFixed(0), A.totals.o2Kg.toFixed(3), A.score.S.toFixed(0), A.score.Smin.toFixed(0), A.score.V.toFixed(0), A.score.C.toFixed(0), A.score.U.toFixed(0), straight.distM.toFixed(0), straight.vetoCells, straight.minS.toFixed(0)));
 
     if (req.wantPlanB) {
       s = performance.now();
@@ -478,17 +480,17 @@ export function plan(scene: SceneData, cfgIn: PlannerConfig, reqIn: PlanRequest,
         k *= 2;
       }
       if (legsB && legsB.length) {
-        const B = finish('B', 'B planı', legsB, order, havenFieldsA);
+        const B = finish('B', M.labelB, legsB, order, havenFieldsA);
         B.diversity = overlap;
         const ratio = B.totals.o2Kg / Math.max(1e-6, A.totals.o2Kg);
-        if (ratio > cfg.planB.maxCostRatio) B.warnings.push(`B planı O₂ maliyeti A'nın ${ratio.toFixed(2)} katı`);
-        if (overlap > cfg.planB.maxOverlap) B.warnings.push(`Anlamlı alternatif yok (örtüşme %${(100 * overlap).toFixed(0)})`);
+        if (ratio > cfg.planB.maxCostRatio) B.warnings.push(M.warnBCost(ratio.toFixed(2)));
+        if (overlap > cfg.planB.maxOverlap) B.warnings.push(M.warnBOverlap((100 * overlap).toFixed(0)));
         routes.push(B);
-        explain.push(`Rota B: A'nın en zayıf halkası (S=${weakest.S.toFixed(0)}, ${weakest.distM.toFixed(0)} m) 12 m yarıçapla vetolandı; A'nın ${cfg.planB.bufferM} m tamponunda maliyet ×${k}; örtüşme %${(100 * overlap).toFixed(0)}.`);
+        explain.push(M.routeB(weakest.S.toFixed(0), weakest.distM.toFixed(0), cfg.planB.bufferM, k, (100 * overlap).toFixed(0)));
       }
       lap('routeB', s);
     }
-  } else explain.push(sep ? 'Sığınak rotası üretilemedi.' : 'Hiçbir hedefe güvenli yol bulunamadı; vetolar veya bütçe çok kısıtlayıcı.');
+  } else explain.push(sep ? M.failShelter : M.failNone);
 
   const q = (a: Float32Array) => { const o = new Uint8Array(n); for (let i = 0; i < n; i++) o[i] = Math.max(0, Math.min(255, Math.round(a[i]))); return o; };
   timing.total = Math.round(performance.now() - t0);
