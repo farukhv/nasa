@@ -10,6 +10,12 @@ export type LayerId = 'none' | 'S' | 'V' | 'C' | 'CLS' | 'K' | 'E' | 'H' | 'shad
 export interface RoverData { waypoints: { sol: number; site: number; drive: number; x: number; y: number; elev: number }[]; traverse: number[][][] }
 
 const SCI_BLUE = '#4C9BFF', SCI_RGB = [76, 155, 255];
+// one hue + one line pattern per route, so they never read alike
+export const ROUTE_COL = { A: '#3DDC84', B: '#35D6F5', ghost: '#F4F7F9', rover: '#D9A877', warn: '#FFC23D', risk: '#FF4FA8' };
+const ROUTE_RGB = { A: [61, 220, 132], B: [53, 214, 245] };
+const ROUTE_NAME = { A: 'Ana rota (A)', B: 'B planı (yedek rota)' };
+const ROUTE_DESC = { A: 'Önerilen yol', B: 'Ana rota kapanırsa kullanılacak yol' };
+interface Feat { key: string; title: string; desc: string; col: string; dashed?: boolean; round?: boolean }
 const C = {
   safe: [95, 227, 176], caution: [255, 194, 61], nogo: [255, 79, 168], science: [79, 216, 255], comms: [244, 247, 249],
   cividis: [[0, 32, 77], [49, 68, 107], [102, 105, 112], [149, 143, 120], [203, 186, 105], [255, 234, 70]],
@@ -33,7 +39,7 @@ export default function MapView(p: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [view, setView] = useState({ s: 1, ox: 0, oy: 0 });
-  const [tip, setTip] = useState<{ x: number; y: number; idx: number; gx: number; gy: number } | null>(null);
+  const [tip, setTip] = useState<{ x: number; y: number; idx: number; gx: number; gy: number; feat: Feat | null } | null>(null);
   const drag = useRef<{ x: number; y: number; ox: number; oy: number; moved: boolean } | null>(null);
   const { W, H, disp_scale: ds, cell_dx } = p.scene.meta;
 
@@ -85,7 +91,8 @@ export default function MapView(p: Props) {
     if (!p.active) return null;
     const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     const ctx = cv.getContext('2d')!, id = ctx.createImageData(W, H), d = id.data, m = p.active.corridor.mask;
-    for (let i = 0; i < W * H; i++) if (m[i]) { d[i * 4] = 244; d[i * 4 + 1] = 247; d[i * 4 + 2] = 249; d[i * 4 + 3] = 90; }
+    const cc = ROUTE_RGB[p.active.id];
+    for (let i = 0; i < W * H; i++) if (m[i]) { d[i * 4] = cc[0]; d[i * 4 + 1] = cc[1]; d[i * 4 + 2] = cc[2]; d[i * 4 + 3] = 70; }
     ctx.putImageData(id, 0, 0); return cv;
   }, [p.active, W, H]);
 
@@ -96,6 +103,7 @@ export default function MapView(p: Props) {
     const ctx = cv.getContext('2d')!; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = '#D9CBB3'; ctx.fillRect(0, 0, el.clientWidth, el.clientHeight);
     if (!img) return;
+    const hot = tip?.feat?.key ?? null;
     const { s, ox, oy } = view;
     const g2s = (gx: number, gy: number) => [ox + gx * ds * s, oy + gy * ds * s];
     ctx.save(); ctx.translate(ox, oy); ctx.scale(s, s);
@@ -110,32 +118,52 @@ export default function MapView(p: Props) {
       ctx.save(); ctx.lineJoin = 'round';
       for (const seg of p.roverTrack.traverse) {
         ctx.beginPath(); seg.forEach(([gx, gy], i) => { const [x, y] = g2s(gx, gy); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+        if (hot === 'rover-track') { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 10; ctx.stroke(); }
         ctx.strokeStyle = '#0E1114'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = '#D9A877'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
       }
       if (view.s * ds > 0.6) for (const w of p.roverTrack.waypoints) { const [x, y] = g2s(w.x, w.y); ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fillStyle = '#D9A877'; ctx.fill(); }
       ctx.restore();
     }
 
+    const tags: [number, number, string, string][] = [];
     const drawRoute = (r: RouteResult, style: 'primary' | 'alt' | 'ghost') => {
       if (!r.points.length) return;
-      ctx.beginPath(); r.points.forEach((pt, i) => { const [x, y] = g2s(pt.x + .5, pt.y + .5); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
-      ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash([]);
-      if (style === 'ghost') { ctx.strokeStyle = 'rgba(163,171,178,0.6)'; ctx.lineWidth = 2; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]); return; }
-      ctx.strokeStyle = '#0E1114'; ctx.lineWidth = style === 'primary' ? 7 : 4; ctx.stroke();
-      ctx.strokeStyle = style === 'primary' ? '#F4F7F9' : '#A3ABB2'; ctx.lineWidth = style === 'primary' ? 3.5 : 2;
-      if (style === 'alt') { ctx.setLineDash([7, 6]); ctx.globalAlpha = 0.85; } ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
-      if (style !== 'primary') return;
-      for (let i = 1; i < r.points.length; i++) {
-        const a = r.points[i - 1], b = r.points[i]; if (b.S >= 70) continue;
-        ctx.strokeStyle = b.S < 50 ? '#FF4FA8' : '#FFC23D'; ctx.lineWidth = 3.5; ctx.beginPath(); const [x0, y0] = g2s(a.x + .5, a.y + .5), [x1, y1] = g2s(b.x + .5, b.y + .5); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      const trace = () => { ctx.beginPath(); r.points.forEach((pt, i) => { const [x, y] = g2s(pt.x + .5, pt.y + .5); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); };
+      // name tag sits where the line is farthest from markers and from the other lines, so it never hides under a label
+      const tag = (text: string, col: string) => {
+        const avoid: number[][] = [...p.pois.map(q => g2s(q.x, q.y)), g2s(p.base.x, p.base.y)];
+        for (const o of [...(p.result?.routes ?? []), ...(p.ghost ? [p.ghost] : [])]) if (o !== r) for (let i = 0; i < o.points.length; i += 6) avoid.push(g2s(o.points[i].x, o.points[i].y));
+        let best = r.points[0], bs = -1; const step = Math.max(1, Math.floor(r.points.length / 60));
+        for (let i = step; i < r.points.length - step; i += step) { const [x, y] = g2s(r.points[i].x, r.points[i].y); let m = 1e9; for (const a of avoid) m = Math.min(m, Math.hypot(a[0] - x, a[1] - y)); for (const t of tags) m = Math.min(m, Math.hypot(t[0] - x, t[1] - y) / 6); if (m > bs) { bs = m; best = r.points[i]; } }
+        const [x, y] = g2s(best.x + .5, best.y + .5); tags.push([x + 10, y + 14, text, col]);
+      };
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash([]); trace();
+      if (style === 'ghost') {
+        if (hot === 'ghost') { ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 9; ctx.stroke(); }
+        ctx.strokeStyle = '#0E1114'; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.strokeStyle = ROUTE_COL.ghost; ctx.lineWidth = 1.5; ctx.lineCap = 'butt'; ctx.setLineDash([2, 5]); ctx.stroke(); ctx.setLineDash([]);
+        tag('İLK PLAN', ROUTE_COL.ghost); return;
       }
-      let nextD = 75;
-      for (let i = 1; i < r.points.length; i++) {
-        const b = r.points[i]; if (b.distM < nextD) continue; nextD += 150;
-        const a = r.points[Math.max(0, i - 4)], [x0, y0] = g2s(a.x + .5, a.y + .5), [x1, y1] = g2s(b.x + .5, b.y + .5), ang = Math.atan2(y1 - y0, x1 - x0);
-        ctx.save(); ctx.translate(x1, y1); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(-6, -5); ctx.lineTo(1, 0); ctx.lineTo(-6, 5); ctx.strokeStyle = '#0E1114'; ctx.lineWidth = 4; ctx.stroke(); ctx.strokeStyle = '#F4F7F9'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+      const prim = style === 'primary', col = ROUTE_COL[r.id];
+      if (hot === 'route-' + r.id) { ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = prim ? 15 : 12; ctx.stroke(); }
+      ctx.strokeStyle = '#0E1114'; ctx.lineWidth = prim ? 8 : 5.5; ctx.stroke();
+      ctx.strokeStyle = col; ctx.lineWidth = prim ? 4.5 : 2.5; ctx.lineCap = 'butt';
+      if (r.id === 'B') ctx.setLineDash(prim ? [14, 7] : [8, 6]);   // B is always dashed, A always solid
+      ctx.stroke(); ctx.setLineDash([]); ctx.lineCap = 'round';
+      if (prim) {
+        for (let i = 1; i < r.points.length; i++) {
+          const a = r.points[i - 1], b = r.points[i]; if (b.S >= 70) continue;
+          ctx.strokeStyle = b.S < 50 ? ROUTE_COL.risk : ROUTE_COL.warn; ctx.lineWidth = 4.5; ctx.beginPath(); const [x0, y0] = g2s(a.x + .5, a.y + .5), [x1, y1] = g2s(b.x + .5, b.y + .5); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        }
+        let nextD = 75;
+        for (let i = 1; i < r.points.length; i++) {
+          const b = r.points[i]; if (b.distM < nextD) continue; nextD += 150;
+          const a = r.points[Math.max(0, i - 4)], [x0, y0] = g2s(a.x + .5, a.y + .5), [x1, y1] = g2s(b.x + .5, b.y + .5), ang = Math.atan2(y1 - y0, x1 - x0);
+          ctx.save(); ctx.translate(x1, y1); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(2, 0); ctx.lineTo(-7, 6); ctx.strokeStyle = '#0E1114'; ctx.lineWidth = 5; ctx.stroke(); ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+        }
+        if (r.pointOfNoReturn !== null) { const pt = r.points[r.pointOfNoReturn], [x, y] = g2s(pt.x + .5, pt.y + .5); octagon(ctx, x, y, 9, ROUTE_COL.risk); label(ctx, x + 12, y - 10, 'DÖNÜŞÜ YOK', ROUTE_COL.risk); }
       }
-      if (r.pointOfNoReturn !== null) { const pt = r.points[r.pointOfNoReturn], [x, y] = g2s(pt.x + .5, pt.y + .5); octagon(ctx, x, y, 9, '#FF4FA8'); label(ctx, x + 12, y - 10, 'DÖNÜŞÜ YOK', '#FF4FA8'); }
+      tag(r.id === 'A' ? 'A · ANA ROTA' : 'B · B PLANI', col);
     };
     if (p.ghost) drawRoute(p.ghost, 'ghost');
     const other = p.result?.routes.find(r => r !== p.active); if (other) drawRoute(other, 'alt');
@@ -170,16 +198,49 @@ export default function MapView(p: Props) {
     if (p.rover) { const [x, y] = g2s(p.rover.x + .5, p.rover.y + .5); if (p.emergency) { ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,59,48,0.25)'; ctx.fill(); } ctx.fillStyle = '#0E1114'; ctx.fillRect(x - 9, y - 7, 18, 14); ctx.fillStyle = shelterCol; ctx.fillRect(x - 7, y - 5, 14, 10); ctx.fillStyle = p.emergency ? '#F4F7F9' : '#0E1114'; ctx.font = '600 9px JetBrains Mono'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('R', x, y + .5); label(ctx, x + 14, y - 10, p.emergency ? 'SIĞINAK · ROVER' : 'ROVER', shelterCol); }
     if (p.currentPt) { const pt = p.currentPt, [x, y] = g2s(pt.x + .5, pt.y + .5); ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = 'rgba(244,247,249,.25)'; ctx.fill(); ctx.strokeStyle = '#F4F7F9'; ctx.lineWidth = 2.5; ctx.stroke(); label(ctx, x + 14, y + 4, 'ASTRONOT', '#F4F7F9'); }
     if (p.hover !== null && p.active) { const pt = p.active.points[Math.min(p.hover, p.active.points.length - 1)]; if (pt) { const [x, y] = g2s(pt.x + .5, pt.y + .5); ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.strokeStyle = '#F4F7F9'; ctx.lineWidth = 2; ctx.stroke(); } }
-  }, [img, view, overlay, vetoCv, corridorCv, p, ds]);
+    for (const [x, y, text, col] of tags) label(ctx, x, y, text, col);
+  }, [img, view, overlay, vetoCv, corridorCv, p, ds, tip?.feat?.key]);
 
-  const toGrid = (e: React.MouseEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top; const gx = (sx - view.ox) / view.s / ds, gy = (sy - view.oy) / view.s / ds; return { gx, gy, sx, sy, inside: gx >= 0 && gy >= 0 && gx < W && gy < H }; };
-  const onWheel = (e: React.WheelEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); const mx = e.clientX - r.left, my = e.clientY - r.top; const f = Math.exp(-e.deltaY * 0.0012); setView(v => { const s = Math.min(40, Math.max(0.05, v.s * f)); const k = s / v.s; return { s, ox: mx - (mx - v.ox) * k, oy: my - (my - v.oy) * k }; }); };
+  const toGrid = (e: React.MouseEvent) => { const r = wrapRef.current!.getBoundingClientRect(); const sx = e.clientX - r.left, sy = e.clientY - r.top; const gx = (sx - view.ox) / view.s / ds, gy = (sy - view.oy) / view.s / ds; return { gx, gy, sx, sy, inside: gx >= 0 && gy >= 0 && gx < W && gy < H }; };
+  const onWheel = (e: React.WheelEvent) => { const r = wrapRef.current!.getBoundingClientRect(); const mx = e.clientX - r.left, my = e.clientY - r.top; const f = Math.exp(-e.deltaY * 0.0012); setView(v => { const s = Math.min(40, Math.max(0.05, v.s * f)); const k = s / v.s; return { s, ox: mx - (mx - v.ox) * k, oy: my - (my - v.oy) * k }; }); };
   const onDown = (e: React.MouseEvent) => { drag.current = { x: e.clientX, y: e.clientY, ox: view.ox, oy: view.oy, moved: false }; };
+  // what is under the cursor, in plain words (first match wins: markers, then lines, then the ground itself)
+  const featureAt = (gx: number, gy: number): { feat: Feat | null; hoverIdx: number | null } => {
+    const px = (n: number) => n / (view.s * ds), near = (x: number, y: number, n: number) => Math.hypot(x - gx, y - gy) < px(n);
+    const order = p.active?.order ?? [];
+    for (const poi of p.pois) if (near(poi.x, poi.y, 13)) {
+      const k = order.indexOf(poi.id), user = poi.kind === 'user';
+      return { hoverIdx: null, feat: { key: 'poi-' + poi.id, title: poi.name, round: true, col: k >= 0 ? (user ? '#F4F7F9' : SCI_BLUE) : '#A3ABB2', desc: `${user ? 'Kullanıcı hedefi' : 'Bilimsel hedef'} · ${k >= 0 ? `${k + 1}. durak` : 'bu rotada ziyaret edilmiyor'}` } };
+    }
+    if (near(p.base.x + .5, p.base.y + .5, 13)) return { hoverIdx: null, feat: { key: 'base', title: 'Habitat (üs)', desc: 'Yürüyüşün başladığı ve bittiği sığınak', col: '#F4F7F9' } };
+    if (p.rover && near(p.rover.x + .5, p.rover.y + .5, 13)) return { hoverIdx: null, feat: { key: 'rover', title: 'Basınçlı rover', desc: 'İkinci sığınak', col: '#F4F7F9' } };
+    if (p.showHavens && p.active) for (const h of p.active.havens) {
+      if (h.id === 'BASE' || h.id === 'ROVER') continue;
+      if (near(h.x + .5, h.y + .5, 11)) return { hoverIdx: null, feat: { key: 'haven-' + h.id, title: `Bekleme noktası ${h.id}`, desc: 'Acil durumda beklenecek korunaklı yer', col: '#5FE3B0' } };
+    }
+    const nearest = (pts: { x: number; y: number }[], lim: number) => { let bi = -1, bd = px(lim); for (let i = 0; i < pts.length; i++) { const d = Math.hypot(pts[i].x + .5 - gx, pts[i].y + .5 - gy); if (d < bd) { bd = d; bi = i; } } return bi; };
+    const routeFeat = (r: RouteResult, sel: boolean): Feat => ({ key: 'route-' + r.id, title: ROUTE_NAME[r.id], col: ROUTE_COL[r.id], dashed: r.id === 'B', desc: `${ROUTE_DESC[r.id]}${sel ? ' · seçili' : ''} · ${fmt(r.totals.distM)} m · ${fmt(r.totals.tMin)} dk` });
+    if (p.active) { const i = nearest(p.active.points, 10); if (i >= 0) return { hoverIdx: i, feat: routeFeat(p.active, true) }; }
+    const other = p.result?.routes.find(r => r !== p.active);
+    if (other && nearest(other.points, 9) >= 0) return { hoverIdx: null, feat: routeFeat(other, false) };
+    if (p.ghost && nearest(p.ghost.points, 8) >= 0) return { hoverIdx: null, feat: { key: 'ghost', title: 'İlk plan', desc: 'Senaryo değişmeden önceki ana rota', col: ROUTE_COL.ghost, dashed: true } };
+    if (p.showRover && p.roverTrack) for (const seg of p.roverTrack.traverse) for (let i = 1; i < seg.length; i++) {
+      const [ax, ay] = seg[i - 1], [bx, by] = seg[i], dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((gx - ax) * dx + (gy - ay) * dy) / (dx * dx + dy * dy || 1)));
+      if (near(ax + t * dx, ay + t * dy, 7)) return { hoverIdx: null, feat: { key: 'rover-track', title: 'Perseverance izi', desc: 'Gezginin gerçekten sürdüğü yol', col: ROUTE_COL.rover, dashed: true } };
+    }
+    const idx = Math.floor(gy) * W + Math.floor(gx), fl = p.result?.fields;
+    if (fl?.veto[idx]) return { hoverIdx: null, feat: p.scene.DV[idx] <= 10 ? { key: 'nodata', title: 'Veri yok', desc: 'Bu hücre için ölçüm yok, rota giremez', col: '#787E84' } : { key: 'veto', title: 'Yasak bölge (veto)', desc: 'Çok dik, çok kayalık ya da tehlikeli zemin', col: ROUTE_COL.risk } };
+    if (p.showCorridor && p.active?.corridor.mask[idx]) return { hoverIdx: null, feat: { key: 'corridor', title: 'Güvenli koridor', desc: 'Rotadan sapılabilecek şerit', col: ROUTE_COL[p.active.id] } };
+    if (fl && fl.V[idx] >= 70) return { hoverIdx: null, feat: { key: 'sci', title: 'Bilimsel değeri yüksek alan', desc: 'Durup incelemeye değer zemin', col: SCI_BLUE } };
+    return { hoverIdx: null, feat: null };
+  };
   const onMove = (e: React.MouseEvent) => {
-    if (drag.current) { const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y; if (Math.hypot(dx, dy) > 3) drag.current.moved = true; setView(v => ({ ...v, ox: drag.current!.ox + dx, oy: drag.current!.oy + dy })); return; }
+    const dg = drag.current;
+    if (dg) { const dx = e.clientX - dg.x, dy = e.clientY - dg.y; if (Math.hypot(dx, dy) > 3) dg.moved = true; const ox = dg.ox + dx, oy = dg.oy + dy; setView(v => ({ ...v, ox, oy })); return; }
     const g = toGrid(e); if (!g.inside) { setTip(null); p.setHover(null); return; }
-    setTip({ x: g.sx, y: g.sy, idx: Math.floor(g.gy) * W + Math.floor(g.gx), gx: g.gx, gy: g.gy });
-    if (p.active) { let bi = -1, bd = 10 / (view.s * ds); for (let i = 0; i < p.active.points.length; i += 2) { const q = p.active.points[i]; const d = Math.hypot(q.x + .5 - g.gx, q.y + .5 - g.gy); if (d < bd) { bd = d; bi = i; } } p.setHover(bi >= 0 ? bi : null); }
+    const hit = featureAt(g.gx, g.gy);
+    setTip({ x: g.sx, y: g.sy, idx: Math.floor(g.gy) * W + Math.floor(g.gx), gx: g.gx, gy: g.gy, feat: hit.feat });
+    p.setHover(hit.hoverIdx);
   };
   const onUp = (e: React.MouseEvent) => {
     const wasDrag = drag.current?.moved; drag.current = null; if (wasDrag) return;
@@ -196,7 +257,8 @@ export default function MapView(p: Props) {
       onWheel={onWheel} onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp} onMouseLeave={() => { drag.current = null; setTip(null); p.setHover(null); }} onDoubleClick={() => img && fit(img.width, img.height)}>
       <canvas ref={canvasRef} />
       {tip && tipIdx >= 0 && (
-        <div className="tip" style={{ left: Math.min(tip.x + 14, (wrapRef.current?.clientWidth ?? 400) - 210), top: tip.y + 14 }}>
+        <div className="tip" style={{ left: Math.max(4, Math.min(tip.x + 14, (wrapRef.current?.clientWidth ?? 400) - 270)), ...(tip.y > (wrapRef.current?.clientHeight ?? 400) - 190 ? { bottom: (wrapRef.current?.clientHeight ?? 400) - tip.y + 12 } : { top: tip.y + 14 }) }}>
+          {tip.feat && <div className="what"><i className={tip.feat.dashed ? 'dash' : tip.feat.round ? 'dot' : ''} style={{ color: tip.feat.col }} /><div><b>{tip.feat.title}</b><span>{tip.feat.desc}</span></div></div>}
           <div className="r"><span className="label">{TERRAIN_CLASSES[p.scene.cls[tipIdx]]?.name}</span><span>{fmt(p.scene.elev[tipIdx], 1)} m</span></div>
           <div className="r"><span>Kaya · eğim · gökyüzü</span><span>%{p.scene.K[tipIdx]} · {p.scene.E[tipIdx]}° · %{p.scene.SVF[tipIdx]}</span></div>
           {f && <>

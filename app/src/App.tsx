@@ -5,7 +5,7 @@ import { buildScenes, gridToLonLat, type SceneDef } from './scenes';
 import { DEFAULT_CONFIG, type PlannerConfig } from './engine/config';
 import type { EnvState, PlanResult, POI, RouteResult } from './engine/types';
 import { marsClock } from './engine/physio';
-import MapView, { type LayerId, type RoverData } from './ui/MapView';
+import MapView, { ROUTE_COL, type LayerId, type RoverData } from './ui/MapView';
 import LeftRail from './ui/LeftRail';
 import RightPanel, { type RoverPov } from './ui/RightPanel';
 import ProfileStrip from './ui/ProfileStrip';
@@ -135,11 +135,11 @@ export default function App() {
 
   const legend = useMemo(() => {
     const emg = env.sep || env.tau > 3;
-    const base = [<span key="a"><i style={{ background: '#F4F7F9', outline: '1px solid #26201C' }} />A rota</span>, <span key="b"><i style={{ background: 'var(--text-2)' }} />B planı (kesikli)</span>, <span key="v"><i style={{ background: 'repeating-linear-gradient(45deg,var(--nogo) 0 2px,transparent 2px 5px)', border: '1px solid var(--nogo)' }} />veto</span>, <span key="p"><i style={{ background: '#4C9BFF', borderRadius: '50%' }} />bilimsel hedef</span>, <span key="pv"><i style={{ background: 'rgba(76,155,255,.5)' }} />bilimsel değeri yüksek alan</span>, <span key="s"><i style={{ background: emg ? 'var(--abort)' : 'var(--comms)' }} />{emg ? 'SAKLANILACAK YER (sığınak)' : 'sığınak'}</span>, <span key="w"><i style={{ background: emg ? 'var(--abort)' : 'transparent', border: emg ? '2px solid var(--abort)' : '2px solid var(--safe)', width: 8, height: 8 }} />{emg ? 'bekleme noktası (acil)' : 'bekleme'}</span>];
+    const base = [<span key="a"><i className="ln" style={{ background: ROUTE_COL.A }} />Ana rota (A)</span>, <span key="a2"><i className="ln" style={{ background: `linear-gradient(90deg, ${ROUTE_COL.warn} 50%, ${ROUTE_COL.risk} 50%)` }} />A üzerinde dikkat / riskli kesim</span>, <span key="b"><i className="ln" style={{ background: `repeating-linear-gradient(90deg, ${ROUTE_COL.B} 0 7px, #26201C 7px 11px)` }} />B planı (kesikli)</span>, <span key="v"><i style={{ background: 'repeating-linear-gradient(45deg,var(--nogo) 0 2px,transparent 2px 5px)', border: '1px solid var(--nogo)' }} />veto</span>, <span key="p"><i style={{ background: '#4C9BFF', borderRadius: '50%' }} />bilimsel hedef</span>, <span key="pv"><i style={{ background: 'rgba(76,155,255,.5)' }} />bilimsel değeri yüksek alan</span>, <span key="s"><i style={{ background: emg ? 'var(--abort)' : 'var(--comms)' }} />{emg ? 'SAKLANILACAK YER (sığınak)' : 'sığınak'}</span>, <span key="w"><i style={{ background: emg ? 'var(--abort)' : 'transparent', border: emg ? '2px solid var(--abort)' : '2px solid var(--safe)', width: 8, height: 8 }} />{emg ? 'bekleme noktası (acil)' : 'bekleme'}</span>];
     if (layer === 'S') base.unshift(<span key="s1"><i style={{ background: 'var(--safe)', borderRadius: '50%' }} />GO ≥70</span>, <span key="s2"><i style={{ background: 'var(--caution)', clipPath: 'polygon(50% 0,100% 100%,0 100%)' }} />50–70</span>, <span key="s3"><i style={{ background: 'var(--nogo)' }} />&lt;50</span>);
     if (layer === 'CLS') base.unshift(<span key="c1"><i style={{ background: '#E8E2D6' }} />anakaya</span>, <span key="c2"><i style={{ background: '#6FA3D8' }} />kayalık</span>, <span key="c3"><i style={{ background: '#5FE3B0' }} />kum dalgası</span>, <span key="c4"><i style={{ background: '#FF4FA8' }} />krater kenarı</span>);
     if (layer === 'V') base.unshift(<span key="v1"><i style={{ background: 'linear-gradient(90deg,#00204D,#FFEA46)' }} />bilim değeri</span>);
-    if (roverTrack && showRover) base.push(<span key="r"><i style={{ background: 'var(--mars-dust)' }} />Perseverance izi</span>);
+    if (roverTrack && showRover) base.push(<span key="r"><i className="ln" style={{ background: `repeating-linear-gradient(90deg, ${ROUTE_COL.rover} 0 4px, #26201C 4px 8px)` }} />Perseverance izi</span>);
     return base;
   }, [layer, roverTrack, showRover, env.sep, env.tau]);
 
